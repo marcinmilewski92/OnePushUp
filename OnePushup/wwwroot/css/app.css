@@ -3,13 +3,13 @@
 }
 
 a, .btn-link {
-    color: #006bb7;
+    color: #cc5500;
 }
 
 .btn-primary {
     color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
+    background-color: #cc5500;
+    border-color: #cc5500;
 }
 
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {

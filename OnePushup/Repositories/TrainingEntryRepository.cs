@@ -14,6 +14,18 @@ public class TrainingEntryRepository
     
     public async Task<Guid> CreateAsync(TrainingEntry entry)
     {
+        // Always store in UTC, but we'll preserve the original input time
+        // This ensures database consistency while respecting user's time zone
+        if (entry.DateTime == default)
+        {
+            entry.DateTime = DateTime.UtcNow;
+        }
+        else if (entry.DateTime.Kind != DateTimeKind.Utc)
+        {
+            // Convert to UTC if not already
+            entry.DateTime = entry.DateTime.ToUniversalTime();
+        }
+        
         var entryResult = await _db.TrainingEntries.AddAsync(entry);
         await _db.SaveChangesAsync();
         return entryResult.Entity.Id;
@@ -21,13 +33,17 @@ public class TrainingEntryRepository
     
     public async Task<bool> HasEntryForTodayAsync(Guid userId)
     {
-        var today = DateTime.Today;
-        var tomorrow = today.AddDays(1);
+        // Get the user's local date range for "today"
+        var userLocalToday = GetUserLocalDateRange();
+        
+        // Convert the local date range to UTC for database comparison
+        var todayStartUtc = userLocalToday.start.ToUniversalTime();
+        var todayEndUtc = userLocalToday.end.ToUniversalTime();
         
         return await _db.TrainingEntries
             .AnyAsync(e => e.UserId == userId && 
-                           e.DateTime >= today && 
-                           e.DateTime < tomorrow);
+                           e.DateTime >= todayStartUtc && 
+                           e.DateTime < todayEndUtc);
     }
     
     public async Task<List<TrainingEntry>> GetEntriesForUserAsync(Guid userId)
@@ -40,6 +56,7 @@ public class TrainingEntryRepository
     
     public async Task<int> GetCurrentStreakAsync(Guid userId)
     {
+        // Get all user entries with valid repetitions
         var entries = await _db.TrainingEntries
             .Where(e => e.UserId == userId && e.NumberOfRepetitions > 0)
             .OrderByDescending(e => e.DateTime)
@@ -50,22 +67,44 @@ public class TrainingEntryRepository
             return 0;
         }
         
-        var streak = 1;
-        var currentDate = entries.First().DateTime.Date;
+        // Group entries by user's local date (not UTC date)
+        var entriesByLocalDate = entries
+            .GroupBy(e => ToUserLocalTime(e.DateTime).Date)
+            .Select(g => g.Key)
+            .OrderByDescending(d => d)
+            .ToList();
         
-        for (int i = 1; i < entries.Count; i++)
+        // Get today and yesterday in user's local time
+        var userLocalToday = DateTime.Now.Date;
+        var userLocalYesterday = userLocalToday.AddDays(-1);
+        
+        // Check if user has entry for today or yesterday to maintain streak
+        var latestEntryDate = entriesByLocalDate.First();
+        bool isOngoingStreak = latestEntryDate >= userLocalYesterday;
+        
+        if (!isOngoingStreak)
         {
-            var previousDate = entries[i].DateTime.Date;
+            // Streak is broken - no entry today or yesterday
+            return 0;
+        }
+        
+        // Count consecutive days
+        var streak = 1;
+        for (int i = 0; i < entriesByLocalDate.Count - 1; i++)
+        {
+            var currentDate = entriesByLocalDate[i];
+            var previousDate = entriesByLocalDate[i + 1];
             
-            // If the previous entry was made exactly one day before the current one
-            if (currentDate.AddDays(-1) == previousDate)
+            // Calculate days between entries - should be exactly 1 for consecutive days
+            var daysBetween = (currentDate - previousDate).Days;
+            
+            if (daysBetween == 1)
             {
                 streak++;
-                currentDate = previousDate;
             }
             else
             {
-                // Streak is broken
+                // Streak is broken - gap in days
                 break;
             }
         }
@@ -81,13 +120,26 @@ public class TrainingEntryRepository
             return 0;
         }
         
+        // Get the user's local date for the start of the streak period
+        var userLocalToday = DateTime.Now.Date;
+        var streakStartDate = userLocalToday.AddDays(-(streak - 1));
+        
+        // Convert to UTC for database query
+        var streakStartUtc = new DateTime(streakStartDate.Year, streakStartDate.Month, streakStartDate.Day, 0, 0, 0, DateTimeKind.Local).ToUniversalTime();
+        
+        // Get entries within the streak period (based on user's local time zone)
         var entries = await _db.TrainingEntries
-            .Where(e => e.UserId == userId && e.NumberOfRepetitions > 0)
-            .OrderByDescending(e => e.DateTime)
-            .Take(streak)
+            .Where(e => e.UserId == userId && 
+                        e.NumberOfRepetitions > 0 && 
+                        e.DateTime >= streakStartUtc)
             .ToListAsync();
         
-        return entries.Sum(e => e.NumberOfRepetitions);
+        // Filter entries by user local date to ensure we're only counting entries within the streak
+        var entriesInStreak = entries
+            .Where(e => ToUserLocalTime(e.DateTime).Date >= streakStartDate)
+            .ToList();
+        
+        return entriesInStreak.Sum(e => e.NumberOfRepetitions);
     }
     
     public async Task<int> GetTotalPushupsAsync(Guid userId)
@@ -95,5 +147,28 @@ public class TrainingEntryRepository
         return await _db.TrainingEntries
             .Where(e => e.UserId == userId)
             .SumAsync(e => e.NumberOfRepetitions);
+    }
+    
+    // Helper methods for time zone handling
+    
+    private (DateTime start, DateTime end) GetUserLocalDateRange()
+    {
+        // Get the current date in user's local time zone
+        var userLocalToday = DateTime.Now.Date;
+        var userLocalTomorrow = userLocalToday.AddDays(1);
+        
+        return (userLocalToday, userLocalTomorrow);
+    }
+    
+    private DateTime ToUserLocalTime(DateTime utcDateTime)
+    {
+        // Convert a UTC datetime to the user's local time zone
+        if (utcDateTime.Kind != DateTimeKind.Utc)
+        {
+            // Ensure we're working with UTC time
+            utcDateTime = DateTime.SpecifyKind(utcDateTime, DateTimeKind.Utc);
+        }
+        
+        return utcDateTime.ToLocalTime();
     }
 }

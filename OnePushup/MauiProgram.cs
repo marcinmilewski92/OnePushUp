@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using OnePushUp.Data;
 using OnePushUp.Repositories;
+using OnePushUp.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace OnePushUp;
@@ -15,9 +16,15 @@ public static class MauiProgram
             .ConfigureFonts(fonts => { fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular"); });
 
         builder.Services.AddMauiBlazorWebView();
+        
+        // Database and repositories
         builder.Services.AddDbContext<OnePushUpDbContext>();
         builder.Services.AddTransient<UsersRepository>();
         builder.Services.AddTransient<TrainingEntryRepository>();
+        
+        // Services
+        builder.Services.AddTransient<TrainingService>();
+        builder.Services.AddTransient<UserService>();
         builder.Services.AddSingleton<DbInitializer>();
 
 #if DEBUG

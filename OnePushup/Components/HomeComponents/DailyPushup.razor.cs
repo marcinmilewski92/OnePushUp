@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using OnePushUp.Data;
+using OnePushUp.Models.Dtos;
+using OnePushUp.Services;
 
 namespace OnePushUp.Components.HomeComponents;
 
@@ -12,6 +14,9 @@ public enum PushupOption
 
 public partial class DailyPushup
 {
+    [Inject]
+    private TrainingService TrainingService { get; set; } = default!;
+    
     [Parameter]
     public User CurrentUser { get; set; } = default!;
     
@@ -26,7 +31,7 @@ public partial class DailyPushup
     private PushupOption _selectedOption = PushupOption.Yes;
     private int _repetitions = 2;
     private bool _repetitionError;
-    private TrainingEntry? _lastEntry;
+    private TrainingEntryDto? _lastEntry;
     
     protected override async Task OnInitializedAsync()
     {
@@ -35,7 +40,7 @@ public partial class DailyPushup
 
     protected override async Task OnParametersSetAsync()
     {
-        if (CurrentUser != null && CurrentUser.Id != Guid.Empty)
+        if (CurrentUser != null && CurrentUser.Id != Guid.Empty && !_isLoading)
         {
             await CheckTodayStatus();
         }
@@ -46,11 +51,11 @@ public partial class DailyPushup
         try
         {
             _isLoading = true;
-            _hasCompletedToday = await TrainingEntryRepository.HasEntryForTodayAsync(CurrentUser.Id);
+            _hasCompletedToday = await TrainingService.HasEntryForTodayAsync(CurrentUser.Id);
             
             if (_hasCompletedToday)
             {
-                var entries = await TrainingEntryRepository.GetEntriesForUserAsync(CurrentUser.Id);
+                var entries = await TrainingService.GetEntriesForUserAsync(CurrentUser.Id);
                 if (entries.Any())
                 {
                     _lastEntry = entries.First(); // Get the most recent entry
@@ -101,18 +106,17 @@ public partial class DailyPushup
                 repetitions = _repetitions;
             }
             
-            var entry = new TrainingEntry
-            {
-                DateTime = DateTime.Now,
-                NumberOfRepetitions = repetitions,
-                UserId = CurrentUser.Id
-            };
+            await TrainingService.CreateEntryAsync(CurrentUser.Id, repetitions);
             
-            await TrainingEntryRepository.CreateAsync(entry);
+            // Refresh last entry
+            var entries = await TrainingService.GetEntriesForUserAsync(CurrentUser.Id);
+            if (entries.Any())
+            {
+                _lastEntry = entries.First();
+            }
             
             _message = "Great job! Your pushup has been recorded.";
             _hasCompletedToday = true;
-            _lastEntry = entry;
             
             await OnEntryAdded.InvokeAsync();
         }

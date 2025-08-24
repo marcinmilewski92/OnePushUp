@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using OnePushUp.Data;
-using OnePushUp.Repositories;
+using OnePushUp.Services;
 using OnePushUp.Components.HomeComponents;
 
 namespace OnePushUp.Components.Pages;
@@ -8,7 +8,7 @@ namespace OnePushUp.Components.Pages;
 public partial class Home : ComponentBase
 {
     [Inject]
-    public UsersRepository UsersRepository { get; set; } = default!;
+    public UserService UserService { get; set; } = default!;
 
     public User? CurrentUser { get; set; }
     
@@ -16,12 +16,12 @@ public partial class Home : ComponentBase
 
     protected override async Task OnInitializedAsync()
     {
-        CurrentUser = await UsersRepository.GetAsync();
+        CurrentUser = await UserService.GetCurrentUserAsync();
     }
 
     public async Task HandleUserCreated(Guid userId)
     {
-        CurrentUser = await UsersRepository.GetAsync();
+        CurrentUser = await UserService.GetCurrentUserAsync();
         StateHasChanged();
     }
     

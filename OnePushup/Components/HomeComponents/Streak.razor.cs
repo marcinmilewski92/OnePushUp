@@ -1,10 +1,15 @@
 using Microsoft.AspNetCore.Components;
 using OnePushUp.Data;
+using OnePushUp.Models.Dtos;
+using OnePushUp.Services;
 
 namespace OnePushUp.Components.HomeComponents;
 
 public partial class Streak
 {
+    [Inject]
+    private TrainingService TrainingService { get; set; } = default!;
+    
     [Parameter]
     public User CurrentUser { get; set; } = default!;
     
@@ -12,9 +17,7 @@ public partial class Streak
     public EventCallback OnDataLoaded { get; set; }
     
     private bool _isLoading = true;
-    private int _currentStreak;
-    private int _streakTotal;
-    private int _totalPushups;
+    private StreakDataDto? _streakData;
     
     protected override async Task OnInitializedAsync()
     {
@@ -34,10 +37,7 @@ public partial class Streak
             
             if (CurrentUser != null && CurrentUser.Id != Guid.Empty)
             {
-                _currentStreak = await TrainingEntryRepository.GetCurrentStreakAsync(CurrentUser.Id);
-                _streakTotal = await TrainingEntryRepository.GetTotalPushupsInCurrentStreakAsync(CurrentUser.Id);
-                _totalPushups = await TrainingEntryRepository.GetTotalPushupsAsync(CurrentUser.Id);
-                
+                _streakData = await TrainingService.GetStreakDataAsync(CurrentUser.Id);
                 await OnDataLoaded.InvokeAsync();
             }
         }
@@ -54,13 +54,16 @@ public partial class Streak
     
     private string GetStreakColorClass()
     {
-        if (_currentStreak >= 30)
+        if (_streakData == null)
+            return "text-muted";
+            
+        if (_streakData.CurrentStreak >= 30)
             return "text-danger"; // Red for 30+ days
-        if (_currentStreak >= 14)
+        if (_streakData.CurrentStreak >= 14)
             return "text-warning"; // Orange for 14+ days
-        if (_currentStreak >= 7)
+        if (_streakData.CurrentStreak >= 7)
             return "text-success"; // Green for 7+ days
-        if (_currentStreak > 0)
+        if (_streakData.CurrentStreak > 0)
             return "text-primary"; // Blue for any streak
             
         return "text-muted"; // Gray for no streak

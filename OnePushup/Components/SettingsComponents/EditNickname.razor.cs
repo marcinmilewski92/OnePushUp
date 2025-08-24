@@ -1,6 +1,7 @@
-using Microsoft.AspNetCore.Components;
+
 using Microsoft.Extensions.Logging;
 using OnePushUp.Data;
+using OnePushUp.Models.Dtos;
 
 namespace OnePushUp.Components.SettingsComponents;
 
@@ -25,7 +26,7 @@ public partial class EditNickname
             _isLoading = true;
             _message = string.Empty;
             
-            _currentUser = await UsersRepository.GetAsync();
+            _currentUser = await UserService.GetCurrentUserAsync();
             
             if (_currentUser != null)
             {
@@ -85,8 +86,16 @@ public partial class EditNickname
             Console.WriteLine($"Updating nickname from '{_currentUser.NickName}' to '{_nickname}'");
             Logger.LogInformation("Updating nickname from '{OldNickname}' to '{NewNickname}'", _currentUser.NickName, _nickname);
             
+            var userDto = new UserDto
+            {
+                Id = _currentUser.Id,
+                NickName = _nickname
+            };
+            
+            await UserService.UpdateUserAsync(userDto);
+            
+            // Update the current user's nickname locally
             _currentUser.NickName = _nickname;
-            await UsersRepository.UpdateAsync(_currentUser);
             
             _message = "Nickname updated successfully!";
             Console.WriteLine("Nickname updated successfully!");
