@@ -1,19 +1,19 @@
 /* OnePushup custom theme */
 :root {
-  --primary-color: #ff5722;
-  --secondary-color: #0c2461;
-  --accent-color: #4a69bd;
-  --background-color: #f5f6fa;
-  --card-color: #ffffff;
-  --text-color: #2c3e50;
-  --text-light: #ecf0f1;
-  --success-color: #27ae60;
-  --warning-color: #f39c12;
-  --danger-color: #c0392b;
-  --gray-light: #ecf0f1;
-  --gray-medium: #bdc3c7;
-  --gray-dark: #7f8c8d;
-  --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --primary-color: #cc5500; /* Burnt orange */
+  --secondary-color: #9b0000; /* Deep red */
+  --accent-color: #ffc300; /* Golden yellow */
+  --background-color: #fff5e6; /* Light beige */
+  --card-color: #ffeedd;
+  --text-color: #4e2a14; /* Dark brown */
+  --text-light: #fff8f0;
+  --success-color: #5b8e3d;
+  --warning-color: #d35400;
+  --danger-color: #8b0000;
+  --gray-light: #f2e8dc;
+  --gray-medium: #d1bfa3;
+  --gray-dark: #8b6f47;
+  --shadow: 0 4px 12px rgba(78, 42, 20, 0.15);
   --border-radius: 12px;
   --font-main: 'Montserrat', 'Segoe UI', Roboto, sans-serif;
   --font-secondary: 'Poppins', 'Segoe UI', Roboto, sans-serif;
@@ -42,7 +42,7 @@ main {
 
 .sidebar {
   background-color: var(--secondary-color);
-  background-image: linear-gradient(135deg, var(--secondary-color), #1e3799);
+  background-image: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
   color: var(--text-light);
   padding: 0;
   width: 250px;
@@ -105,7 +105,7 @@ article.content {
 
 /* Streak component styling */
 .streak-card {
-  background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
+  background: linear-gradient(135deg, var(--secondary-color), var(--primary-color), var(--accent-color));
   color: var(--text-light);
   text-align: center;
   padding: 2rem;
@@ -167,25 +167,25 @@ article.content {
 .btn-primary {
   background-color: var(--primary-color);
   color: white;
-  box-shadow: 0 4px 8px rgba(255, 87, 34, 0.3);
+  box-shadow: 0 4px 8px rgba(204, 85, 0, 0.3);
 }
 
 .btn-primary:hover {
-  background-color: #e64a19;
+  background-color: #b94a00;
   transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(255, 87, 34, 0.4);
+  box-shadow: 0 6px 12px rgba(204, 85, 0, 0.4);
 }
 
 .btn-secondary {
   background-color: var(--accent-color);
   color: white;
-  box-shadow: 0 4px 8px rgba(74, 105, 189, 0.3);
+  box-shadow: 0 4px 8px rgba(255, 195, 0, 0.3);
 }
 
 .btn-secondary:hover {
-  background-color: #3c5daa;
+  background-color: #e6ac00;
   transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(74, 105, 189, 0.4);
+  box-shadow: 0 6px 12px rgba(255, 195, 0, 0.4);
 }
 
 .btn-success {
@@ -214,7 +214,7 @@ article.content {
 
 .form-control:focus {
   border-color: var(--accent-color);
-  box-shadow: 0 0 0 3px rgba(74, 105, 189, 0.25);
+  box-shadow: 0 0 0 3px rgba(255, 195, 0, 0.25);
 }
 
 label {
@@ -314,19 +314,19 @@ label {
 }
 
 .alert-success {
-  background-color: rgba(39, 174, 96, 0.1);
+  background-color: rgba(91, 142, 61, 0.1);
   border-left-color: var(--success-color);
   color: var(--success-color);
 }
 
 .alert-warning {
-  background-color: rgba(243, 156, 18, 0.1);
+  background-color: rgba(211, 84, 0, 0.1);
   border-left-color: var(--warning-color);
   color: var(--warning-color);
 }
 
 .alert-danger {
-  background-color: rgba(192, 57, 43, 0.1);
+  background-color: rgba(139, 0, 0, 0.1);
   border-left-color: var(--danger-color);
   color: var(--danger-color);
 }
