@@ -25,6 +25,7 @@ public static class MauiProgram
         // Services
         builder.Services.AddTransient<TrainingService>();
         builder.Services.AddTransient<UserService>();
+        builder.Services.AddTransient<NotificationService>();
         builder.Services.AddSingleton<DbInitializer>();
 
 #if DEBUG

@@ -79,4 +79,13 @@
       <ProjectReference Include="..\OnePushUp.Data\OnePushUp.Data.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <AndroidResource Update="Platforms\Android\Resources\drawable\ic_notification.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </AndroidResource>
+      <AndroidResource Update="Platforms\Android\Resources\drawable\notification_icon.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </AndroidResource>
+    </ItemGroup>
+
 </Project>

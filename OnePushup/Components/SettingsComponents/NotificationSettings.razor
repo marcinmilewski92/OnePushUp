@@ -1,0 +1,42 @@
+@using OnePushUp.Services
+
+<div class="card">
+    <div class="card-header">
+        <h3>Push Notifications</h3>
+    </div>
+    <div class="card-body">
+        @if (_isLoading)
+        {
+            <p>Loading notification settings...</p>
+        }
+        else
+        {
+            <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="notificationsEnabled" 
+                       @bind="@_notificationsEnabled" />
+                <label class="form-check-label" for="notificationsEnabled">
+                    Enable daily reminder notifications
+                </label>
+            </div>
+            
+            @if (_notificationsEnabled)
+            {
+                <div class="mb-3">
+                    <label for="notificationTime" class="form-label">Reminder time</label>
+                    <input type="time" class="form-control" id="notificationTime" 
+                           @bind="@_notificationTime" @bind:after="UpdateNotificationTime" />
+                    <div class="form-text">
+                        You will receive a push notification at this time every day.
+                    </div>
+                </div>
+            }
+            
+            @if (!string.IsNullOrEmpty(_message))
+            {
+                <div class="alert @(_isError ? "alert-danger" : "alert-success") mt-3">
+                    @_message
+                </div>
+            }
+        }
+    </div>
+</div>
