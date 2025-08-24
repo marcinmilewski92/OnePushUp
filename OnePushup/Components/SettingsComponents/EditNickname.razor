@@ -1,0 +1,43 @@
+@using OnePushUp.Data
+@using OnePushUp.Repositories
+@using Microsoft.Extensions.Logging
+@inject UsersRepository UsersRepository
+@inject ILogger<EditNickname> Logger
+
+<div class="card">
+    <div class="card-header">
+        <h3>Edit Nickname</h3>
+    </div>
+    <div class="card-body">
+        @if (_isLoading)
+        {
+            <p>Loading...</p>
+        }
+        else
+        {
+            <EditForm Model="@this" OnValidSubmit="SaveNickname">
+                <div class="mb-3">
+                    <label for="nickname" class="form-label">Nickname</label>
+                    <InputText id="nickname" class="form-control" @bind-Value="_nickname" />
+                </div>
+                <button type="submit" class="btn btn-primary" disabled="@_isSaving">
+                    @if (_isSaving)
+                    {
+                        <span>Saving...</span>
+                    }
+                    else
+                    {
+                        <span>Save</span>
+                    }
+                </button>
+            </EditForm>
+            
+            @if (!string.IsNullOrEmpty(_message))
+            {
+                <div class="alert @(_isError ? "alert-danger" : "alert-success") mt-3">
+                    @_message
+                </div>
+            }
+        }
+    </div>
+</div>

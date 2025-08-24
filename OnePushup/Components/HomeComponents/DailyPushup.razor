@@ -1,0 +1,85 @@
+@using OnePushUp.Data
+@using OnePushUp.Repositories
+@inject TrainingEntryRepository TrainingEntryRepository
+
+<div class="card mt-4">
+    <div class="card-header">
+        <h3>Daily Pushup Challenge</h3>
+    </div>
+    <div class="card-body">
+        @if (_isLoading)
+        {
+            <p>Loading...</p>
+        }
+        else if (_hasCompletedToday)
+        {
+            <div class="alert alert-success">
+                <h4>Great job! 💪</h4>
+                <p>You've already completed your pushup challenge for today.</p>
+                @if (_lastEntry != null && _lastEntry.NumberOfRepetitions > 1)
+                {
+                    <p>You did @_lastEntry.NumberOfRepetitions pushups today!</p>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="mb-3">Did you do your one pushup today?</p>
+            
+            <EditForm Model="@this" OnValidSubmit="SaveTrainingEntry">
+                <div class="mb-3">
+                    <InputRadioGroup @bind-Value="_selectedOption">
+                        <div class="form-check">
+                            <InputRadio class="form-check-input" Value="@PushupOption.Yes" id="option-yes" />
+                            <label class="form-check-label" for="option-yes">
+                                Yes
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <InputRadio class="form-check-input" Value="@PushupOption.YesMore" id="option-more" />
+                            <label class="form-check-label" for="option-more">
+                                Yes, I did even more
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <InputRadio class="form-check-input" Value="@PushupOption.No" id="option-no" />
+                            <label class="form-check-label" for="option-no">
+                                No
+                            </label>
+                        </div>
+                    </InputRadioGroup>
+                </div>
+                
+                @if (_selectedOption == PushupOption.YesMore)
+                {
+                    <div class="mb-3">
+                        <label for="repetitions" class="form-label">How many pushups did you do?</label>
+                        <InputNumber class="form-control" id="repetitions" @bind-Value="_repetitions" min="2" />
+                        @if (_repetitionError)
+                        {
+                            <div class="text-danger mt-1">Please enter a valid number (minimum 2)</div>
+                        }
+                    </div>
+                }
+                
+                <button type="submit" class="btn btn-primary" disabled="@_isSaving">
+                    @if (_isSaving)
+                    {
+                        <span>Saving...</span>
+                    }
+                    else
+                    {
+                        <span>Save</span>
+                    }
+                </button>
+            </EditForm>
+            
+            @if (!string.IsNullOrEmpty(_message))
+            {
+                <div class="alert @(_isError ? "alert-danger" : "alert-success") mt-3">
+                    @_message
+                </div>
+            }
+        }
+    </div>
+</div>

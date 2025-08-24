@@ -1,0 +1,48 @@
+﻿@inherits LayoutComponentBase
+
+<div class="page">
+    <div class="sidebar">
+        <div class="sidebar-brand">
+            <i class="bi bi-arrow-up-circle-fill me-2"></i> OnePushUp
+        </div>
+        <NavMenu/>
+    </div>
+
+    <main>
+        <div class="top-row">
+            <div class="d-flex justify-content-between align-items-center w-100">
+                <div>
+                    <h4 class="mb-0">@GetPageTitle()</h4>
+                </div>
+                <div>
+                    <a href="/settings" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-gear"></i> Settings
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <article class="content">
+            @Body
+        </article>
+    </main>
+</div>
+
+@code {
+    private string GetPageTitle()
+    {
+        var uri = new Uri(Navigation.Uri);
+        var path = uri.AbsolutePath;
+        
+        return path switch
+        {
+            "/" => "Dashboard",
+            "/settings" => "Settings",
+            "/history" => "History",
+            _ => "OnePushUp"
+        };
+    }
+    
+    [Inject]
+    public NavigationManager Navigation { get; set; } = default!;
+}

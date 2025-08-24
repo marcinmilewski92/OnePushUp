@@ -1,0 +1,33 @@
+﻿@page "/settings"
+@using OnePushUp.Components.SettingsComponents
+@using OnePushUp.Repositories
+@using OnePushUp.Data
+@inject UsersRepository UsersRepository
+
+<h1>Settings</h1>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-6">
+            @if (CurrentUser != null)
+            {
+                <EditNickname />
+            }
+            else
+            {
+                <div class="alert alert-warning">
+                    No user profile found. Please create a user profile from the home page first.
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private User? CurrentUser;
+
+    protected override async Task OnInitializedAsync()
+    {
+        CurrentUser = await UsersRepository.GetAsync();
+    }
+}

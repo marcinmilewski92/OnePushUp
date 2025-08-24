@@ -1,0 +1,29 @@
+﻿<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">OnePushUp</a>
+    </div>
+</div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler"/>
+
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+    <div class="nav-container">
+        <nav class="flex-column">
+            <div class="nav-item">
+                <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                    <i class="bi bi-house-door me-3"></i> <span>Dashboard</span>
+                </NavLink>
+            </div>
+            <div class="nav-item">
+                <NavLink class="nav-link" href="history">
+                    <i class="bi bi-calendar-check me-3"></i> <span>History</span>
+                </NavLink>
+            </div>
+            <div class="nav-item">
+                <NavLink class="nav-link" href="settings">
+                    <i class="bi bi-gear me-3"></i> <span>Settings</span>
+                </NavLink>
+            </div>
+        </nav>
+    </div>
+</div>
