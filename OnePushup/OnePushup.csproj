@@ -43,7 +43,7 @@
         <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
 
         <!-- Splash Screen -->
-        <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
+        <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#ffc009" BaseSize="128,128" />
 
         <!-- Images -->
         <MauiImage Include="Resources\Images\*" />
@@ -54,6 +54,11 @@
 
         <!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
         <MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+        <ImageAsset Include="wwwroot\splash.svg">
+          <Color>#ffc009</Color>
+          <BaseSize>128,128</BaseSize>
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </ImageAsset>
     </ItemGroup>
 
     <ItemGroup>
@@ -63,11 +68,7 @@
         <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.1" />
     </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Platforms\Android\Resources\" />
-    </ItemGroup>
-
+    
     <ItemGroup>
       <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.19">
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -80,12 +81,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <AndroidResource Update="Platforms\Android\Resources\drawable\ic_notification.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </AndroidResource>
-      <AndroidResource Update="Platforms\Android\Resources\drawable\notification_icon.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </AndroidResource>
+      <Folder Include="Platforms\Android\Resources\" />
     </ItemGroup>
 
 </Project>

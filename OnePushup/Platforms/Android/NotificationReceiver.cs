@@ -140,7 +140,9 @@ public class NotificationReceiver : BroadcastReceiver
                 {
                     // If still not found, try a direct reference
                     try {
-                        iconId = Resource.Drawable.notification_icon;
+                        // Remove the direct reference to Resource.Drawable.notification_icon since it doesn't exist
+                        // Use system icon as fallback
+                        iconId = global::Android.Resource.Drawable.IcDialogInfo;
                     }
                     catch {
                         // Ignore if this fails

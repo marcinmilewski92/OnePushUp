@@ -7,16 +7,93 @@
         {
             <p>Loading...</p>
         }
-        else if (_hasCompletedToday)
+        else if (_hasCompletedToday && !_isEditing)
         {
-            <div class="alert alert-success">
-                <h4>Great job! 💪</h4>
-                <p>You've already completed your pushup challenge for today.</p>
-                @if (_lastEntry != null && _lastEntry.NumberOfRepetitions > 1)
+            <div class="alert @(_lastEntry != null && _lastEntry.NumberOfRepetitions > 0 ? "alert-success" : "alert-warning")">
+                @if (_lastEntry != null && _lastEntry.NumberOfRepetitions > 0)
                 {
-                    <p>You did @_lastEntry.NumberOfRepetitions pushups today!</p>
+                    <h4>Great job! 💪</h4>
+                    <p>You've already completed your pushup challenge for today.</p>
+                    
+                    @if (_lastEntry.NumberOfRepetitions > 1)
+                    {
+                        <p>You did @_lastEntry.NumberOfRepetitions pushups today!</p>
+                    }
+                    else
+                    {
+                        <p>You did 1 pushup today!</p>
+                    }
                 }
+                else
+                {
+                    <h4>Challenge recorded</h4>
+                    <p>You've recorded 0 pushups for today. Don't worry, there's always tomorrow!</p>
+                }
+                
+                <div class="mt-2">
+                    <button class="btn btn-outline-success" style="color: #2E8B57; border-color: #2E8B57;" @onclick="EnableEditMode">
+                        <i class="bi bi-pencil"></i> Edit Today's Entry
+                    </button>
+                </div>
             </div>
+        }
+        else if (_isEditing)
+        {
+            <h4>Edit Today's Pushup Entry</h4>
+            <p class="text-muted">Update your pushup count for today</p>
+            
+            <EditForm Model="@this" OnValidSubmit="UpdateTrainingEntry">
+                <div class="mb-3">
+                    <InputRadioGroup @bind-Value="_selectedOption">
+                        <div class="form-check">
+                            <InputRadio class="form-check-input" Value="@PushupOption.Yes" id="edit-option-yes" />
+                            <label class="form-check-label" for="edit-option-yes">
+                                Yes, I did one pushup
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <InputRadio class="form-check-input" Value="@PushupOption.YesMore" id="edit-option-more" />
+                            <label class="form-check-label" for="edit-option-more">
+                                Yes, I did more than one
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <InputRadio class="form-check-input" Value="@PushupOption.No" id="edit-option-no" />
+                            <label class="form-check-label" for="edit-option-no">
+                                No, I didn't do any pushups
+                            </label>
+                        </div>
+                    </InputRadioGroup>
+                </div>
+                
+                @if (_selectedOption == PushupOption.YesMore)
+                {
+                    <div class="mb-3">
+                        <label for="edit-repetitions" class="form-label">How many pushups did you do?</label>
+                        <InputNumber class="form-control" id="edit-repetitions" @bind-Value="_repetitions" min="2" />
+                        @if (_repetitionError)
+                        {
+                            <div class="text-danger mt-1">Please enter a valid number (minimum 2)</div>
+                        }
+                    </div>
+                }
+                
+                <div>
+                    <button type="submit" class="btn btn-primary me-2" disabled="@_isSaving">
+                        @if (_isSaving)
+                        {
+                            <span>Saving...</span>
+                        }
+                        else
+                        {
+                            <span>Update</span>
+                        }
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" @onclick="CancelEdit">
+                        Cancel
+                    </button>
+                </div>
+            </EditForm>
         }
         else
         {
@@ -69,13 +146,13 @@
                     }
                 </button>
             </EditForm>
-            
-            @if (!string.IsNullOrEmpty(_message))
-            {
-                <div class="alert @(_isError ? "alert-danger" : "alert-success") mt-3">
-                    @_message
-                </div>
-            }
+        }
+        
+        @if (!string.IsNullOrEmpty(_message))
+        {
+            <div class="alert @(_isError ? "alert-danger" : "alert-success") mt-3">
+                @_message
+            </div>
         }
     </div>
 </div>

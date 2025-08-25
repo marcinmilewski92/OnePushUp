@@ -7,9 +7,5 @@
 }
 else
 {
-    <h1>Hello, @CurrentUser.NickName!</h1>
-    
-    <Streak @ref="_streakComponent" CurrentUser="CurrentUser" OnDataLoaded="HandleStreakDataLoaded" />
-    
     <DailyPushup CurrentUser="CurrentUser" OnEntryAdded="HandleEntryAdded" />
 }

@@ -173,37 +173,8 @@ public class NotificationService
                 notificationIntent, 
                 PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
             
-            // Get icon ID
-            int iconId;
-            try {
-                // Try multiple ways to get the icon
-                iconId = context.Resources.GetIdentifier("notification_icon", "drawable", context.PackageName);
-                if (iconId == 0)
-                {
-                    // Try the original icon name
-                    iconId = context.Resources.GetIdentifier("ic_notification", "drawable", context.PackageName);
-                }
-                
-                if (iconId == 0)
-                {
-                    // If still not found, try a direct reference
-                    iconId = Resource.Drawable.notification_icon;
-                }
-                
-                if (iconId == 0)
-                {
-                    _logger.LogWarning("Custom notification icon not found by any method");
-                    iconId = Android.Resource.Drawable.IcDialogInfo; // Use system icon as fallback
-                }
-                else
-                {
-                    _logger.LogInformation($"Using custom notification icon with id: {iconId}");
-                }
-            }
-            catch (Exception ex) {
-                _logger.LogWarning($"Error finding custom icon: {ex.Message}");
-                iconId = Android.Resource.Drawable.IcDialogInfo; // Use system icon as fallback
-            }
+            // Use the default Android system information icon
+            int iconId = Android.Resource.Drawable.IcDialogInfo;
             
             // Build the notification
             var builder = new NotificationCompat.Builder(context, "pushup_reminders")
@@ -520,8 +491,8 @@ public class NotificationService
                         
                         // Build notification
                         var builder = new NotificationCompat.Builder(context, "pushup_reminders")
-                            .SetContentTitle("OnePushUp Direct Reminder")
-                            .SetContentText("Time to do your daily pushup! (Direct scheduled)")
+                            .SetContentTitle("OnePushUp Reminder")
+                            .SetContentText("Time to do your daily pushup! Do it now to not lose your streak!")
                             .SetSmallIcon(iconId)
                             .SetContentIntent(pendingIntent)
                             .SetAutoCancel(true)
