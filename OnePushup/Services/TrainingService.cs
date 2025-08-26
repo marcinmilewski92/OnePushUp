@@ -17,9 +17,7 @@ public class TrainingService
     {
         var entry = new TrainingEntry
         {
-            DateTime = DateTime.Now.Kind == DateTimeKind.Local ? 
-                DateTime.Now.ToUniversalTime() : 
-                DateTime.UtcNow,
+            DateTime = DateTime.UtcNow,
             NumberOfRepetitions = repetitions,
             UserId = userId
         };
