@@ -2,12 +2,21 @@ using Android.App;
 using Android.Content;
 using Android.OS;
 using AndroidX.Core.App;
+using Microsoft.Maui;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using System;
 
 namespace OnePushUp.Platforms.Android;
 
 public static class NotificationBuilder
 {
+    private static ILogger Logger => _logger ??=
+        MauiApplication.Current?.Services?.GetService<ILoggerFactory>()?.CreateLogger(nameof(NotificationBuilder))
+        ?? NullLogger.Instance;
+    private static ILogger? _logger;
+
     public static void ShowPushupNotification(Context context, Intent intent)
     {
         try
@@ -24,10 +33,8 @@ public static class NotificationBuilder
                     Description = "Daily reminders to do your pushups",
                     LockscreenVisibility = NotificationVisibility.Public
                 };
-
                 channel.EnableVibration(true);
                 notificationManager.CreateNotificationChannel(channel);
-                Console.WriteLine("NotificationReceiver: Notification channel created");
             }
 
             var notificationIntent = new Intent(context, Java.Lang.Class.ForName("onepushup.MainActivity"));
@@ -41,50 +48,10 @@ public static class NotificationBuilder
                 notificationIntent,
                 PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
 
-            string timeString = intent.GetStringExtra("notification_time") ?? DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-            Console.WriteLine($"NotificationReceiver: Notification time from intent: {timeString}");
-
-            int iconId;
-            try
-            {
-                iconId = context.Resources.GetIdentifier("notification_icon", "drawable", context.PackageName);
-                if (iconId == 0)
-                {
-                    iconId = context.Resources.GetIdentifier("ic_notification", "drawable", context.PackageName);
-                }
-
-                if (iconId == 0)
-                {
-                    try
-                    {
-                        iconId = global::Android.Resource.Drawable.IcDialogInfo;
-                    }
-                    catch
-                    {
-                    }
-                }
-
-                if (iconId == 0)
-                {
-                    Console.WriteLine("NotificationReceiver: Custom icon not found by any method");
-                    iconId = global::Android.Resource.Drawable.IcDialogInfo;
-                }
-                else
-                {
-                    Console.WriteLine($"NotificationReceiver: Using custom notification icon with id: {iconId}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"NotificationReceiver: Error finding custom icon: {ex.Message}");
-                iconId = global::Android.Resource.Drawable.IcDialogInfo;
-            }
-
-            string approach = intent.GetStringExtra("approach") ?? "default";
-
+            int iconId = global::Android.Resource.Drawable.IcDialogInfo;
             var builder = new NotificationCompat.Builder(context, "pushup_reminders")
                 .SetContentTitle("OnePushUp Reminder")
-                .SetContentText($"Time to do your daily pushup! ({approach})")
+                .SetContentText("Time to do your daily pushup!")
                 .SetSmallIcon(iconId)
                 .SetContentIntent(pendingIntent)
                 .SetAutoCancel(true)
@@ -100,14 +67,12 @@ public static class NotificationBuilder
 
             int notificationId = intent.GetIntExtra("notification_id", 1);
             notificationManager.Notify(notificationId, builder.Build());
-
-            Console.WriteLine($"NotificationReceiver: Pushup notification displayed with ID {notificationId} at {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-
             WakeDeviceScreen(context);
+            Logger.LogInformation("Pushup notification displayed with ID {Id}", notificationId);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"NotificationReceiver: Error showing notification: {ex.Message}");
+            Logger.LogError(ex, "Error showing pushup notification");
         }
     }
 
@@ -127,7 +92,6 @@ public static class NotificationBuilder
                     Description = "Daily reminders to do your pushups",
                     LockscreenVisibility = NotificationVisibility.Public
                 };
-
                 channel.EnableVibration(true);
                 notificationManager.CreateNotificationChannel(channel);
             }
@@ -144,7 +108,6 @@ public static class NotificationBuilder
                 PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
 
             int iconId = global::Android.Resource.Drawable.IcDialogInfo;
-
             var builder = new NotificationCompat.Builder(context, "pushup_reminders")
                 .SetContentTitle("OnePushUp Test")
                 .SetContentText($"Notification system is working! Current time: {DateTime.Now:HH:mm:ss}")
@@ -156,12 +119,11 @@ public static class NotificationBuilder
 
             int notificationId = intent.GetIntExtra("notification_id", 999);
             notificationManager.Notify(notificationId, builder.Build());
-
-            Console.WriteLine($"NotificationReceiver: Test notification displayed at {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            Logger.LogInformation("Test notification displayed at {Time}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"NotificationReceiver: Error showing test notification: {ex.Message}");
+            Logger.LogError(ex, "Error showing test notification");
         }
     }
 
@@ -174,12 +136,11 @@ public static class NotificationBuilder
 
             var wakeLock = powerManager.NewWakeLock(WakeLockFlags.ScreenBright | WakeLockFlags.AcquireCausesWakeup, "OnePushUp::NotificationWakeLock");
             wakeLock.Acquire(5000);
-
-            Console.WriteLine("NotificationReceiver: Acquired wake lock to ensure notification visibility");
+            Logger.LogInformation("Wake lock acquired to display notification");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"NotificationReceiver: Error waking device screen: {ex.Message}");
+            Logger.LogError(ex, "Error waking device screen");
         }
     }
 }

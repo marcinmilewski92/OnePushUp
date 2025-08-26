@@ -1,5 +1,9 @@
 using Android.App;
 using Android.Content;
+using Microsoft.Maui;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using System;
 
 namespace OnePushUp.Platforms.Android;
@@ -13,12 +17,17 @@ namespace OnePushUp.Platforms.Android;
 })]
 public class NotificationReceiver : BroadcastReceiver
 {
+    private ILogger<NotificationReceiver> Logger => _logger ??=
+        MauiApplication.Current?.Services?.GetService<ILogger<NotificationReceiver>>()
+        ?? NullLogger<NotificationReceiver>.Instance;
+    private ILogger<NotificationReceiver>? _logger;
+
     public override void OnReceive(Context context, Intent intent)
     {
         try
         {
             var action = intent.Action;
-            Console.WriteLine($"NotificationReceiver: Received intent with action: {action ?? "null"}");
+            Logger.LogInformation("NotificationReceiver: Received intent with action: {Action}", action ?? "null");
 
             if (action == Intent.ActionBootCompleted ||
                 action == Intent.ActionLockedBootCompleted ||
@@ -49,7 +58,7 @@ public class NotificationReceiver : BroadcastReceiver
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"NotificationReceiver: Error in OnReceive: {ex.Message}");
+            Logger.LogError(ex, "NotificationReceiver: Error in OnReceive");
             try
             {
                 AlarmScheduler.RescheduleForTomorrow(context);
