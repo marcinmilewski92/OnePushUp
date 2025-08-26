@@ -164,22 +164,11 @@ public class TrainingEntryRepository : ITrainingEntryRepository
             .Where(e => e.UserId == userId)
             .SumAsync(e => e.NumberOfRepetitions);
     }
-    
+
     public async Task<bool> DeleteEntryForTodayAsync(Guid userId)
     {
-        // Get the user's local date range for "today"
-        var dateRange = GetUserLocalDateRange();
-        
-        // Convert the local date range to UTC for database comparison
-        var todayStartUtc = dateRange.start.ToUniversalTime();
-        var todayEndUtc = dateRange.end.ToUniversalTime();
-        
-        // Find today's entry
-        var todayEntry = await _db.TrainingEntries
-            .FirstOrDefaultAsync(e => e.UserId == userId && 
-                                    e.DateTime >= todayStartUtc && 
-                                    e.DateTime < todayEndUtc);
-        
+        var todayEntry = await GetEntryForTodayAsync(userId);
+
         if (todayEntry == null)
         {
             return false; // No entry found to delete
