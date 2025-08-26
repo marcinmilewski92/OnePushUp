@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,13 +6,9 @@ namespace OnePushUp.Data;
 
 public class OnePushUpDbContext : DbContext
 {
-    public DbSet<User> Users { get; set; }
-    public DbSet<TrainingEntry> TrainingEntries { get; set; }
-    
-    public OnePushUpDbContext()
-    {
-    }
-    
+    public DbSet<User> Users => Set<User>();
+    public DbSet<TrainingEntry> TrainingEntries => Set<TrainingEntry>();
+
     public OnePushUpDbContext(DbContextOptions<OnePushUpDbContext> options)
         : base(options)
     {
