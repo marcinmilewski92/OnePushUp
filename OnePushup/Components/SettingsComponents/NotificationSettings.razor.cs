@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Logging;
 using OnePushUp.Services;
 
 namespace OnePushUp.Components.SettingsComponents;
@@ -7,6 +8,9 @@ public partial class NotificationSettings
 {
     [Inject]
     private NotificationService NotificationService { get; set; } = default!;
+
+    [Inject]
+    private ILogger<NotificationSettings> Logger { get; set; } = default!;
     
     private bool _isLoading = true;
     private bool _notificationsEnabled;
@@ -39,7 +43,7 @@ public partial class NotificationSettings
         {
             _isError = true;
             _message = $"Error loading notification settings: {ex.Message}";
-            Console.WriteLine($"Error loading notification settings: {ex.Message}");
+            Logger.LogError(ex, "Error loading notification settings");
             _isLoading = false;
         }
     }
@@ -64,7 +68,7 @@ public partial class NotificationSettings
         {
             _isError = true;
             _message = $"Error updating notification settings: {ex.Message}";
-            Console.WriteLine($"Error updating notification settings: {ex.Message}");
+            Logger.LogError(ex, "Error updating notification settings");
         }
     }
     
@@ -88,7 +92,7 @@ public partial class NotificationSettings
         {
             _isError = true;
             _message = $"Error updating notification time: {ex.Message}";
-            Console.WriteLine($"Error updating notification time: {ex.Message}");
+            Logger.LogError(ex, "Error updating notification time");
         }
     }
 }

@@ -1,8 +1,12 @@
 using Android.App;
 using Android.Content;
-using Android.OS; 
+using Android.OS;
 using AndroidX.Core.App;
 using Microsoft.Maui.Storage;
+using Microsoft.Maui;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using System;
 
 namespace OnePushUp.Platforms.Android;
@@ -23,6 +27,11 @@ public class NotificationReceiver : BroadcastReceiver
     private const string ACTION_DAILY_NOTIFICATION = "com.onepushup.DAILY_NOTIFICATION";
     private const string ACTION_RESTORE_NOTIFICATIONS = "RESTORE_NOTIFICATIONS";
 
+    private ILogger<NotificationReceiver> Logger => _logger ??=
+        MauiApplication.Current?.Services?.GetService<ILogger<NotificationReceiver>>()
+        ?? NullLogger<NotificationReceiver>.Instance;
+    private ILogger<NotificationReceiver>? _logger;
+
     public override void OnReceive(Context context, Intent intent)
     {
         try
@@ -30,7 +39,7 @@ public class NotificationReceiver : BroadcastReceiver
             // Get the action from the intent
             var action = intent.Action;
             
-            Console.WriteLine($"NotificationReceiver: Received intent with action: {action ?? "null"}");
+            Logger.LogInformation("NotificationReceiver: Received intent with action: {Action}", action ?? "null");
             
             // Handle system boot or package replaced
             if (action == Intent.ActionBootCompleted || 
@@ -39,7 +48,7 @@ public class NotificationReceiver : BroadcastReceiver
                 action == "android.intent.action.MY_PACKAGE_REPLACED" ||
                 action == ACTION_RESTORE_NOTIFICATIONS)
             {
-                Console.WriteLine("NotificationReceiver: System boot or app updated, restoring notifications");
+                Logger.LogInformation("NotificationReceiver: System boot or app updated, restoring notifications");
                 RestoreNotificationsAfterReboot(context);
                 return;
             }
@@ -48,7 +57,7 @@ public class NotificationReceiver : BroadcastReceiver
             bool isTestNotification = intent.GetBooleanExtra("test_notification", false);
             if (isTestNotification)
             {
-                Console.WriteLine("NotificationReceiver: Handling test notification");
+                Logger.LogInformation("NotificationReceiver: Handling test notification");
                 ShowTestNotification(context, intent);
                 return;
             }
@@ -69,8 +78,7 @@ public class NotificationReceiver : BroadcastReceiver
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"NotificationReceiver: Error in OnReceive: {ex.Message}");
-            Console.WriteLine($"NotificationReceiver: Stack trace: {ex.StackTrace}");
+            Logger.LogError(ex, "NotificationReceiver: Error in OnReceive");
             
             // Try to reschedule anyway if there was an error
             try
@@ -106,7 +114,7 @@ public class NotificationReceiver : BroadcastReceiver
                 channel.EnableVibration(true);
                 
                 notificationManager.CreateNotificationChannel(channel);
-                Console.WriteLine("NotificationReceiver: Notification channel created");
+                Logger.LogInformation("NotificationReceiver: Notification channel created");
             }
             
             // Create the notification with an intent that opens the app
@@ -123,7 +131,7 @@ public class NotificationReceiver : BroadcastReceiver
             
             // Get the notification time from intent extras (if available)
             string timeString = intent.GetStringExtra("notification_time") ?? DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-            Console.WriteLine($"NotificationReceiver: Notification time from intent: {timeString}");
+            Logger.LogInformation("NotificationReceiver: Notification time from intent: {Time}", timeString);
             
             // Try to find notification icon by resource ID
             int iconId;
@@ -151,16 +159,16 @@ public class NotificationReceiver : BroadcastReceiver
                 
                 if (iconId == 0)
                 {
-                    Console.WriteLine("NotificationReceiver: Custom icon not found by any method");
+                    Logger.LogWarning("NotificationReceiver: Custom icon not found by any method");
                     iconId = global::Android.Resource.Drawable.IcDialogInfo; // Fallback to system icon
                 }
                 else
                 {
-                    Console.WriteLine($"NotificationReceiver: Using custom notification icon with id: {iconId}");
+                    Logger.LogInformation("NotificationReceiver: Using custom notification icon with id: {IconId}", iconId);
                 }
             }
             catch (Exception ex) {
-                Console.WriteLine($"NotificationReceiver: Error finding custom icon: {ex.Message}");
+                Logger.LogError(ex, "NotificationReceiver: Error finding custom icon");
                 iconId = global::Android.Resource.Drawable.IcDialogInfo; // Fallback to system icon
             }
             
@@ -189,14 +197,14 @@ public class NotificationReceiver : BroadcastReceiver
             int notificationId = intent.GetIntExtra("notification_id", 1);
             notificationManager.Notify(notificationId, builder.Build());
             
-            Console.WriteLine($"NotificationReceiver: Pushup notification displayed with ID {notificationId} at {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            Logger.LogInformation("NotificationReceiver: Pushup notification displayed with ID {NotificationId} at {Time}", notificationId, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
             
             // Wake up the device if screen is off
             WakeDeviceScreen(context);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"NotificationReceiver: Error showing notification: {ex.Message}");
+            Logger.LogError(ex, "NotificationReceiver: Error showing notification");
         }
     }
     
@@ -251,11 +259,11 @@ public class NotificationReceiver : BroadcastReceiver
             int notificationId = intent.GetIntExtra("notification_id", 999);
             notificationManager.Notify(notificationId, builder.Build());
             
-            Console.WriteLine($"NotificationReceiver: Test notification displayed at {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            Logger.LogInformation("NotificationReceiver: Test notification displayed at {Time}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"NotificationReceiver: Error showing test notification: {ex.Message}");
+            Logger.LogError(ex, "NotificationReceiver: Error showing test notification");
         }
     }
     
@@ -270,11 +278,11 @@ public class NotificationReceiver : BroadcastReceiver
             var wakeLock = powerManager.NewWakeLock(WakeLockFlags.ScreenBright | WakeLockFlags.AcquireCausesWakeup, "OnePushUp::NotificationWakeLock");
             wakeLock.Acquire(5000); // Hold for 5 seconds
             
-            Console.WriteLine("NotificationReceiver: Acquired wake lock to ensure notification visibility");
+            Logger.LogInformation("NotificationReceiver: Acquired wake lock to ensure notification visibility");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"NotificationReceiver: Error waking device screen: {ex.Message}");
+            Logger.LogError(ex, "NotificationReceiver: Error waking device screen");
         }
     }
     
@@ -286,7 +294,7 @@ public class NotificationReceiver : BroadcastReceiver
             bool enabled = Preferences.Default.Get(EnabledKey, false);
             if (!enabled)
             {
-                Console.WriteLine("NotificationReceiver: Notifications were disabled, not restoring");
+                Logger.LogInformation("NotificationReceiver: Notifications were disabled, not restoring");
                 return;
             }
             
@@ -294,12 +302,12 @@ public class NotificationReceiver : BroadcastReceiver
             long timeTicks = Preferences.Default.Get(TimeKey, 0L);
             if (timeTicks == 0)
             {
-                Console.WriteLine("NotificationReceiver: No notification time stored, using default");
+                Logger.LogInformation("NotificationReceiver: No notification time stored, using default");
                 timeTicks = new TimeSpan(8, 0, 0).Ticks; // Default to 8:00 AM
             }
-            
+
             var time = TimeSpan.FromTicks(timeTicks);
-            Console.WriteLine($"NotificationReceiver: Restoring notification for {time:hh\\:mm}");
+            Logger.LogInformation("NotificationReceiver: Restoring notification for {Time}", time.ToString("hh\\:mm"));
             
             // Calculate when to send the notification
             var now = DateTime.Now;
@@ -313,7 +321,7 @@ public class NotificationReceiver : BroadcastReceiver
             if (notificationTime <= now)
             {
                 notificationTime = notificationTime.AddDays(1);
-                Console.WriteLine("NotificationReceiver: Time already passed today, scheduling for tomorrow");
+                Logger.LogInformation("NotificationReceiver: Time already passed today, scheduling for tomorrow");
             }
             
             // APPROACH 1: Use Calendar and RTC
@@ -331,13 +339,13 @@ public class NotificationReceiver : BroadcastReceiver
             }
             
             var triggerAtMillis = calendar.TimeInMillis;
-            Console.WriteLine($"NotificationReceiver: Will trigger at {calendar.Time}");
+            Logger.LogInformation("NotificationReceiver: Will trigger at {CalendarTime}", calendar.Time);
             
             // Schedule using AlarmManager
             var alarmManager = context.GetSystemService(Context.AlarmService) as AlarmManager;
             if (alarmManager == null)
             {
-                Console.WriteLine("NotificationReceiver: Failed to get AlarmManager service");
+                Logger.LogError("NotificationReceiver: Failed to get AlarmManager service");
                 return;
             }
             
@@ -393,12 +401,12 @@ public class NotificationReceiver : BroadcastReceiver
                         AlarmType.RtcWakeup,
                         triggerAtMillis,
                         exactPendingIntent);
-                    
-                    Console.WriteLine("NotificationReceiver: Exact alarm set after boot");
+
+                    Logger.LogInformation("NotificationReceiver: Exact alarm set after boot");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"NotificationReceiver: Error setting exact alarm: {ex.Message}");
+                    Logger.LogError(ex, "NotificationReceiver: Error setting exact alarm");
                 }
                 
                 // Also set an inexact alarm as backup
@@ -408,12 +416,12 @@ public class NotificationReceiver : BroadcastReceiver
                         AlarmType.RtcWakeup,
                         triggerAtMillis,
                         inexactPendingIntent);
-                    
-                    Console.WriteLine("NotificationReceiver: Inexact alarm set after boot");
+
+                    Logger.LogInformation("NotificationReceiver: Inexact alarm set after boot");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"NotificationReceiver: Error setting inexact alarm: {ex.Message}");
+                    Logger.LogError(ex, "NotificationReceiver: Error setting inexact alarm");
                 }
             }
             else
@@ -425,12 +433,12 @@ public class NotificationReceiver : BroadcastReceiver
                         AlarmType.RtcWakeup,
                         triggerAtMillis,
                         exactPendingIntent);
-                    
-                    Console.WriteLine("NotificationReceiver: Exact alarm set for older Android");
+
+                    Logger.LogInformation("NotificationReceiver: Exact alarm set for older Android");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"NotificationReceiver: Error setting exact alarm on older Android: {ex.Message}");
+                    Logger.LogError(ex, "NotificationReceiver: Error setting exact alarm on older Android");
                 }
             }
             
@@ -442,12 +450,12 @@ public class NotificationReceiver : BroadcastReceiver
                     triggerAtMillis,
                     AlarmManager.IntervalDay, // 24 hours in milliseconds
                     repeatingPendingIntent);
-                
-                Console.WriteLine("NotificationReceiver: Repeating alarm set as backup");
+
+                Logger.LogInformation("NotificationReceiver: Repeating alarm set as backup");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"NotificationReceiver: Error setting repeating alarm: {ex.Message}");
+                Logger.LogError(ex, "NotificationReceiver: Error setting repeating alarm");
             }
             
             // Set window alarms as additional backup (+/- 2 minutes)
@@ -456,12 +464,11 @@ public class NotificationReceiver : BroadcastReceiver
             SetWindowAlarm(context, alarmManager, time, 1, 103);
             SetWindowAlarm(context, alarmManager, time, 2, 104);
             
-            Console.WriteLine("NotificationReceiver: Multiple alarms scheduled after boot/restore");
+            Logger.LogInformation("NotificationReceiver: Multiple alarms scheduled after boot/restore");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"NotificationReceiver: Error restoring notifications: {ex.Message}");
-            Console.WriteLine($"NotificationReceiver: Stack trace: {ex.StackTrace}");
+            Logger.LogError(ex, "NotificationReceiver: Error restoring notifications");
         }
     }
     
@@ -473,7 +480,7 @@ public class NotificationReceiver : BroadcastReceiver
             bool enabled = Preferences.Default.Get(EnabledKey, false);
             if (!enabled)
             {
-                Console.WriteLine("NotificationReceiver: Notifications are disabled, not rescheduling");
+                Logger.LogInformation("NotificationReceiver: Notifications are disabled, not rescheduling");
                 return;
             }
             
@@ -481,12 +488,12 @@ public class NotificationReceiver : BroadcastReceiver
             long timeTicks = Preferences.Default.Get(TimeKey, 0L);
             if (timeTicks == 0)
             {
-                Console.WriteLine("NotificationReceiver: No notification time stored, using default");
+                Logger.LogInformation("NotificationReceiver: No notification time stored, using default");
                 timeTicks = new TimeSpan(8, 0, 0).Ticks; // Default to 8:00 AM
             }
-            
+
             TimeSpan scheduledTime = TimeSpan.FromTicks(timeTicks);
-            Console.WriteLine($"NotificationReceiver: Rescheduling for tomorrow at {scheduledTime:hh\\:mm}");
+            Logger.LogInformation("NotificationReceiver: Rescheduling for tomorrow at {Time}", scheduledTime.ToString("hh\\:mm"));
             
             // Calculate next notification time using Calendar
             var calendar = Java.Util.Calendar.GetInstance(Java.Util.TimeZone.Default);
@@ -504,7 +511,7 @@ public class NotificationReceiver : BroadcastReceiver
             var alarmManager = context.GetSystemService(Context.AlarmService) as AlarmManager;
             if (alarmManager == null)
             {
-                Console.WriteLine("NotificationReceiver: Failed to get AlarmManager service for rescheduling");
+                Logger.LogError("NotificationReceiver: Failed to get AlarmManager service for rescheduling");
                 return;
             }
             
@@ -558,12 +565,12 @@ public class NotificationReceiver : BroadcastReceiver
                         AlarmType.RtcWakeup,
                         triggerAtMillis,
                         exactPendingIntent);
-                    
-                    Console.WriteLine($"NotificationReceiver: Exact alarm rescheduled for tomorrow at {calendar.Time}");
+
+                    Logger.LogInformation("NotificationReceiver: Exact alarm rescheduled for tomorrow at {CalendarTime}", calendar.Time);
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"NotificationReceiver: Error setting exact alarm for tomorrow: {ex.Message}");
+                    Logger.LogError(ex, "NotificationReceiver: Error setting exact alarm for tomorrow");
                 }
                 
                 try
@@ -572,12 +579,12 @@ public class NotificationReceiver : BroadcastReceiver
                         AlarmType.RtcWakeup,
                         triggerAtMillis,
                         inexactPendingIntent);
-                    
-                    Console.WriteLine("NotificationReceiver: Inexact alarm set for tomorrow");
+
+                    Logger.LogInformation("NotificationReceiver: Inexact alarm set for tomorrow");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"NotificationReceiver: Error setting inexact alarm for tomorrow: {ex.Message}");
+                    Logger.LogError(ex, "NotificationReceiver: Error setting inexact alarm for tomorrow");
                 }
             }
             else
@@ -588,12 +595,12 @@ public class NotificationReceiver : BroadcastReceiver
                         AlarmType.RtcWakeup,
                         triggerAtMillis,
                         exactPendingIntent);
-                    
-                    Console.WriteLine($"NotificationReceiver: Alarm rescheduled for tomorrow at {calendar.Time}");
+
+                    Logger.LogInformation("NotificationReceiver: Alarm rescheduled for tomorrow at {CalendarTime}", calendar.Time);
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"NotificationReceiver: Error setting exact alarm for older Android: {ex.Message}");
+                    Logger.LogError(ex, "NotificationReceiver: Error setting exact alarm for older Android");
                 }
             }
             
@@ -605,12 +612,12 @@ public class NotificationReceiver : BroadcastReceiver
                     triggerAtMillis,
                     AlarmManager.IntervalDay,
                     repeatingPendingIntent);
-                
-                Console.WriteLine($"NotificationReceiver: Repeating alarm set for tomorrow at {calendar.Time}");
+
+                Logger.LogInformation("NotificationReceiver: Repeating alarm set for tomorrow at {CalendarTime}", calendar.Time);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"NotificationReceiver: Error setting repeating alarm: {ex.Message}");
+                Logger.LogError(ex, "NotificationReceiver: Error setting repeating alarm");
             }
             
             // Also set window alarms for tomorrow
@@ -621,7 +628,7 @@ public class NotificationReceiver : BroadcastReceiver
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"NotificationReceiver: Error rescheduling for tomorrow: {ex.Message}");
+            Logger.LogError(ex, "NotificationReceiver: Error rescheduling for tomorrow");
         }
     }
     
@@ -667,12 +674,12 @@ public class NotificationReceiver : BroadcastReceiver
                         AlarmType.RtcWakeup,
                         windowTriggerAtMillis,
                         pendingIntent);
-                    
-                    Console.WriteLine($"NotificationReceiver: Window alarm set for {(minuteOffset > 0 ? "+" : "")}{minuteOffset} minute(s) offset");
+
+                    Logger.LogInformation("NotificationReceiver: Window alarm set for {Offset} minute(s) offset", (minuteOffset > 0 ? "+" : "") + minuteOffset);
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"NotificationReceiver: Error setting window alarm: {ex.Message}");
+                    Logger.LogError(ex, "NotificationReceiver: Error setting window alarm");
                 }
             }
             else
@@ -683,18 +690,18 @@ public class NotificationReceiver : BroadcastReceiver
                         AlarmType.RtcWakeup,
                         windowTriggerAtMillis,
                         pendingIntent);
-                    
-                    Console.WriteLine($"NotificationReceiver: Window alarm set for {(minuteOffset > 0 ? "+" : "")}{minuteOffset} minute(s) offset");
+
+                    Logger.LogInformation("NotificationReceiver: Window alarm set for {Offset} minute(s) offset", (minuteOffset > 0 ? "+" : "") + minuteOffset);
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"NotificationReceiver: Error setting window alarm for older Android: {ex.Message}");
+                    Logger.LogError(ex, "NotificationReceiver: Error setting window alarm for older Android");
                 }
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"NotificationReceiver: Error setting window alarm with offset {minuteOffset}: {ex.Message}");
+            Logger.LogError(ex, "NotificationReceiver: Error setting window alarm with offset {Offset}", minuteOffset);
         }
     }
 }
