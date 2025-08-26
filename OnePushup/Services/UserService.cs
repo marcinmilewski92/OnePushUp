@@ -6,9 +6,9 @@ namespace OnePushUp.Services;
 
 public class UserService
 {
-    private readonly UsersRepository _usersRepository;
+    private readonly IUsersRepository _usersRepository;
 
-    public UserService(UsersRepository usersRepository)
+    public UserService(IUsersRepository usersRepository)
     {
         _usersRepository = usersRepository;
     }

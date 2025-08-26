@@ -3,7 +3,7 @@ using OnePushUp.Data;
 
 namespace OnePushUp.Repositories;
 
-public class UsersRepository
+public class UsersRepository : IUsersRepository
 {
     private readonly OnePushUpDbContext _db;
     public UsersRepository(OnePushUpDbContext db)

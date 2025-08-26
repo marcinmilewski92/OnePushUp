@@ -3,7 +3,7 @@ using OnePushUp.Data;
 
 namespace OnePushUp.Repositories;
 
-public class TrainingEntryRepository
+public class TrainingEntryRepository : ITrainingEntryRepository
 {
     private readonly OnePushUpDbContext _db;
     
