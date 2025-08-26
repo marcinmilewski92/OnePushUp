@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Logging;
 using OnePushUp.Data;
 using OnePushUp.Models.Dtos;
 using OnePushUp.Services;
@@ -9,6 +10,9 @@ public partial class Streak
 {
     [Inject]
     private TrainingService TrainingService { get; set; } = default!;
+
+    [Inject]
+    private ILogger<Streak> Logger { get; set; } = default!;
     
     [Parameter]
     public User CurrentUser { get; set; } = default!;
@@ -43,7 +47,7 @@ public partial class Streak
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading streak data: {ex.Message}");
+            Logger.LogError(ex, "Error loading streak data");
         }
         finally
         {

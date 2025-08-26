@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Logging;
 using OnePushUp.Data;
 using OnePushUp.Models.Dtos;
 using OnePushUp.Services;
@@ -16,6 +17,9 @@ public partial class DailyPushup
 {
     [Inject]
     private TrainingService TrainingService { get; set; } = default!;
+
+    [Inject]
+    private ILogger<DailyPushup> Logger { get; set; } = default!;
     
     [Parameter]
     public User CurrentUser { get; set; } = default!;
@@ -80,7 +84,7 @@ public partial class DailyPushup
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error checking today's status: {ex.Message}");
+            Logger.LogError(ex, "Error checking today's status");
             _isError = true;
             _message = "Error checking your status for today.";
         }
@@ -189,7 +193,7 @@ public partial class DailyPushup
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error updating training entry: {ex.Message}");
+            Logger.LogError(ex, "Error updating training entry");
             _isError = true;
             _message = "Error updating your pushup record.";
         }
@@ -251,7 +255,7 @@ public partial class DailyPushup
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error saving training entry: {ex.Message}");
+            Logger.LogError(ex, "Error saving training entry");
             _isError = true;
             _message = "Error saving your pushup record.";
         }

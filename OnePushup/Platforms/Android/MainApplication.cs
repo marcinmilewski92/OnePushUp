@@ -3,6 +3,9 @@ using Android.Runtime;
 using Android.Content;
 using Microsoft.Maui.Storage;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Maui;
 using OnePushUp.Services;
 using Android.OS;
 
@@ -11,6 +14,9 @@ namespace OnePushUp;
 [Application]
 public class MainApplication : MauiApplication
 {
+    private ILogger<MainApplication> Logger => _logger ??=
+        Services.GetService<ILogger<MainApplication>>() ?? NullLogger<MainApplication>.Instance;
+    private ILogger<MainApplication>? _logger;
     public MainApplication(IntPtr handle, JniHandleOwnership ownership)
         : base(handle, ownership)
     {
@@ -48,7 +54,7 @@ public class MainApplication : MauiApplication
                     bool notificationsEnabled = Preferences.Default.Get("notifications_enabled", false);
                     if (notificationsEnabled)
                     {
-                        System.Console.WriteLine("Restoring notifications on app startup");
+                        Logger.LogInformation("Restoring notifications on app startup");
                         
                         // Send a broadcast to restore notifications
                         Intent restoreIntent = new Intent(this, Java.Lang.Class.FromType(typeof(Platforms.Android.NotificationReceiver)));
@@ -68,26 +74,26 @@ public class MainApplication : MauiApplication
                                         if (settings.Enabled && settings.Time.HasValue)
                                         {
                                             await notificationService.UpdateNotificationSettingsAsync(settings);
-                                            System.Console.WriteLine($"Restored notification for {settings.Time.Value:hh\\:mm} via service");
+                                            Logger.LogInformation("Restored notification for {Time} via service", settings.Time.Value.ToString("hh\\:mm"));
                                         }
                                     }
                                 }
                             }
                             catch (Exception ex) {
-                                System.Console.WriteLine($"Error restoring notifications via service: {ex.Message}");
+                                Logger.LogError(ex, "Error restoring notifications via service");
                             }
                         });
                     }
                 }
                 catch (Exception ex)
                 {
-                    System.Console.WriteLine($"Error in RestoreNotificationsOnStartup: {ex.Message}");
+                    Logger.LogError(ex, "Error in RestoreNotificationsOnStartup");
                 }
             }), 3000); // Delay for 3 seconds to ensure app is fully initialized
         }
         catch (Exception ex)
         {
-            System.Console.WriteLine($"Failed to schedule restoration: {ex.Message}");
+            Logger.LogError(ex, "Failed to schedule restoration");
         }
     }
     
@@ -99,11 +105,11 @@ public class MainApplication : MauiApplication
             intent.SetAction("RESTORE_NOTIFICATIONS");
             intent.PutExtra("source", "application_startup");
             SendBroadcast(intent);
-            System.Console.WriteLine("Sent restore notifications intent to receiver");
+            Logger.LogInformation("Sent restore notifications intent to receiver");
         }
         catch (Exception ex)
         {
-            System.Console.WriteLine($"Error sending restore intent: {ex.Message}");
+            Logger.LogError(ex, "Error sending restore intent");
         }
     }
 
@@ -113,11 +119,15 @@ public class MainApplication : MauiApplication
 [BroadcastReceiver(Enabled = true)]
 public class PackageReplacedReceiver : BroadcastReceiver
 {
+    private ILogger<PackageReplacedReceiver> Logger => _logger ??=
+        MauiApplication.Current?.Services?.GetService<ILogger<PackageReplacedReceiver>>()
+        ?? NullLogger<PackageReplacedReceiver>.Instance;
+    private ILogger<PackageReplacedReceiver>? _logger;
     public override void OnReceive(Context context, Intent intent)
     {
         if (intent.Action == Intent.ActionMyPackageReplaced)
         {
-            System.Console.WriteLine("App was updated, restoring notifications");
+            Logger.LogInformation("App was updated, restoring notifications");
             
             // Send broadcast to our notification receiver
             Intent notificationIntent = new Intent(context, Java.Lang.Class.FromType(typeof(Platforms.Android.NotificationReceiver)));

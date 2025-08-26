@@ -7,6 +7,9 @@ namespace OnePushUp.Components.SettingsComponents;
 
 public partial class EditNickname
 {
+    [Inject]
+    private ILogger<EditNickname> Logger { get; set; } = default!;
+
     private string _nickname = string.Empty;
     private bool _isLoading = true;
     private bool _isSaving;
@@ -31,14 +34,12 @@ public partial class EditNickname
             if (_currentUser != null)
             {
                 _nickname = _currentUser.NickName;
-                Console.WriteLine($"User loaded: {_currentUser.Id}, Nickname: {_currentUser.NickName}");
                 Logger.LogInformation("User loaded: {UserId}, Nickname: {Nickname}", _currentUser.Id, _currentUser.NickName);
             }
             else
             {
                 _message = "No user found. Please create a user first.";
                 _isError = true;
-                Console.WriteLine("No user found in the database.");
                 Logger.LogWarning("No user found in the database");
             }
         }
@@ -46,7 +47,6 @@ public partial class EditNickname
         {
             _isError = true;
             _message = $"Error loading user data: {ex.Message}";
-            Console.WriteLine($"Error loading user data: {ex.Message}");
             Logger.LogError(ex, "Error loading user data");
         }
         finally
@@ -68,7 +68,6 @@ public partial class EditNickname
             {
                 _isError = true;
                 _message = "No user found to update.";
-                Console.WriteLine("No user found to update.");
                 Logger.LogWarning("Attempted to save nickname but no user was found");
                 return;
             }
@@ -77,13 +76,11 @@ public partial class EditNickname
             {
                 _isError = true;
                 _message = "Nickname cannot be empty.";
-                Console.WriteLine("Nickname cannot be empty.");
                 Logger.LogWarning("Attempted to save empty nickname");
                 return;
             }
 
             // Log before updating
-            Console.WriteLine($"Updating nickname from '{_currentUser.NickName}' to '{_nickname}'");
             Logger.LogInformation("Updating nickname from '{OldNickname}' to '{NewNickname}'", _currentUser.NickName, _nickname);
             
             var userDto = new UserDto
@@ -98,14 +95,12 @@ public partial class EditNickname
             _currentUser.NickName = _nickname;
             
             _message = "Nickname updated successfully!";
-            Console.WriteLine("Nickname updated successfully!");
             Logger.LogInformation("Nickname updated successfully for user {UserId}", _currentUser.Id);
         }
         catch (Exception ex)
         {
             _isError = true;
             _message = $"Error saving nickname: {ex.Message}";
-            Console.WriteLine($"Error saving nickname: {ex.Message}");
             Logger.LogError(ex, "Error saving nickname");
         }
         finally
