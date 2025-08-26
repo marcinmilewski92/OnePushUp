@@ -25,15 +25,12 @@ public class UsersRepository
     public async Task UpdateAsync(User user)
     {
         var existingUser = await _db.Users.FindAsync(user.Id);
-        if (existingUser is not null)
+        if (existingUser is null)
         {
-            existingUser.NickName = user.NickName;
-            await _db.SaveChangesAsync();
+            return;
         }
-        
-        
-        
-        
-        
+
+        existingUser.NickName = user.NickName;
+        await _db.SaveChangesAsync();
     }
 }

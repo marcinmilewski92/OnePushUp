@@ -43,20 +43,8 @@ public class TrainingEntryRepository
         return result > 0;
     }
     
-    public async Task<bool> HasEntryForTodayAsync(Guid userId)
-    {
-        // Get the user's local date range for "today"
-        var userLocalToday = GetUserLocalDateRange();
-        
-        // Convert the local date range to UTC for database comparison
-        var todayStartUtc = userLocalToday.start.ToUniversalTime();
-        var todayEndUtc = userLocalToday.end.ToUniversalTime();
-        
-        return await _db.TrainingEntries
-            .AnyAsync(e => e.UserId == userId && 
-                           e.DateTime >= todayStartUtc && 
-                           e.DateTime < todayEndUtc);
-    }
+    public async Task<bool> HasEntryForTodayAsync(Guid userId) =>
+        await GetEntryForTodayAsync(userId) is not null;
     
     public async Task<TrainingEntry?> GetEntryForTodayAsync(Guid userId)
     {
