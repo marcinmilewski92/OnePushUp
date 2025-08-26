@@ -65,15 +65,17 @@ public class TrainingService
 
     public async Task<StreakDataDto> GetStreakDataAsync(Guid userId)
     {
-        var currentStreak = await _trainingEntryRepository.GetCurrentStreakAsync(userId);
-        var streakTotal = await _trainingEntryRepository.GetTotalPushupsInCurrentStreakAsync(userId);
-        var totalPushups = await _trainingEntryRepository.GetTotalPushupsAsync(userId);
+        var currentStreakTask = _trainingEntryRepository.GetCurrentStreakAsync(userId);
+        var streakTotalTask = _trainingEntryRepository.GetTotalPushupsInCurrentStreakAsync(userId);
+        var totalPushupsTask = _trainingEntryRepository.GetTotalPushupsAsync(userId);
+
+        await Task.WhenAll(currentStreakTask, streakTotalTask, totalPushupsTask);
 
         return new StreakDataDto
         {
-            CurrentStreak = currentStreak,
-            PushupsInCurrentStreak = streakTotal,
-            TotalPushups = totalPushups
+            CurrentStreak = await currentStreakTask,
+            PushupsInCurrentStreak = await streakTotalTask,
+            TotalPushups = await totalPushupsTask
         };
     }
 
