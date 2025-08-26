@@ -68,6 +68,18 @@ public class TrainingEntryRepository : ITrainingEntryRepository
             .OrderByDescending(e => e.DateTime)
             .ToListAsync();
     }
+
+    private async Task<Dictionary<DateTime, int>> GetEntriesByLocalDateAsync(Guid userId)
+    {
+        var entries = await _db.TrainingEntries
+            .Where(e => e.UserId == userId && e.NumberOfRepetitions > 0)
+            .OrderByDescending(e => e.DateTime)
+            .ToListAsync();
+
+        return entries
+            .GroupBy(e => ToUserLocalTime(e.DateTime).Date)
+            .ToDictionary(g => g.Key, g => g.Sum(e => e.NumberOfRepetitions));
+    }
     
     public async Task<int> GetCurrentStreakAsync(Guid userId)
     {
@@ -87,30 +99,23 @@ public class TrainingEntryRepository : ITrainingEntryRepository
             return 0;
         }
         
-        // Get all user entries with valid repetitions
-        var entries = await _db.TrainingEntries
-            .Where(e => e.UserId == userId && e.NumberOfRepetitions > 0)
-            .OrderByDescending(e => e.DateTime)
-            .ToListAsync();
-        
-        if (!entries.Any())
+        var entriesByLocalDate = await GetEntriesByLocalDateAsync(userId);
+
+        if (!entriesByLocalDate.Any())
         {
             return 0;
         }
-        
-        // Group entries by user's local date (not UTC date)
-        var entriesByLocalDate = entries
-            .GroupBy(e => ToUserLocalTime(e.DateTime).Date)
-            .Select(g => g.Key)
+
+        var orderedDates = entriesByLocalDate.Keys
             .OrderByDescending(d => d)
             .ToList();
         
         // Get today and yesterday in user's local time
         var userLocalToday = DateTime.Now.Date;
         var userLocalYesterday = userLocalToday.AddDays(-1);
-        
+
         // Check if user has entry for today or yesterday to maintain streak
-        var latestEntryDate = entriesByLocalDate.First();
+        var latestEntryDate = orderedDates.First();
         bool isOngoingStreak = latestEntryDate >= userLocalYesterday;
         
         if (!isOngoingStreak)
@@ -121,10 +126,10 @@ public class TrainingEntryRepository : ITrainingEntryRepository
         
         // Count consecutive days
         var streak = 1;
-        for (int i = 0; i < entriesByLocalDate.Count - 1; i++)
+        for (int i = 0; i < orderedDates.Count - 1; i++)
         {
-            var currentDate = entriesByLocalDate[i];
-            var previousDate = entriesByLocalDate[i + 1];
+            var currentDate = orderedDates[i];
+            var previousDate = orderedDates[i + 1];
             
             // Calculate days between entries - should be exactly 1 for consecutive days
             var daysBetween = (currentDate - previousDate).Days;
@@ -145,68 +150,61 @@ public class TrainingEntryRepository : ITrainingEntryRepository
     
     public async Task<int> GetTotalPushupsInCurrentStreakAsync(Guid userId)
     {
-        var streak = await GetCurrentStreakAsync(userId);
-        if (streak == 0)
+        // Check if there's an entry with 0 pushups for today, which would break the streak
+        var dateRange = GetUserLocalDateRange();
+        var todayStartUtc = dateRange.start.ToUniversalTime();
+        var todayEndUtc = dateRange.end.ToUniversalTime();
+
+        var todayEntry = await _db.TrainingEntries
+            .FirstOrDefaultAsync(e => e.UserId == userId &&
+                                    e.DateTime >= todayStartUtc &&
+                                    e.DateTime < todayEndUtc);
+
+        if (todayEntry != null && todayEntry.NumberOfRepetitions == 0)
         {
             return 0;
         }
-        
-        // Get all user entries with valid repetitions
-        var entries = await _db.TrainingEntries
-            .Where(e => e.UserId == userId && e.NumberOfRepetitions > 0)
-            .OrderByDescending(e => e.DateTime)
-            .ToListAsync();
-            
-        if (!entries.Any())
+
+        var entriesByLocalDate = await GetEntriesByLocalDateAsync(userId);
+
+        if (!entriesByLocalDate.Any())
         {
             return 0;
         }
-        
-        // Group entries by user's local date (not UTC date)
-        var entriesByLocalDate = entries
-            .GroupBy(e => ToUserLocalTime(e.DateTime).Date)
-            .ToDictionary(g => g.Key, g => g.Sum(e => e.NumberOfRepetitions));
-        
-        // Get today and yesterday in user's local time
+
+        var orderedDates = entriesByLocalDate.Keys
+            .OrderByDescending(d => d)
+            .ToList();
+
         var userLocalToday = DateTime.Now.Date;
         var userLocalYesterday = userLocalToday.AddDays(-1);
-        
-        // Find the latest entry date in user's local time
-        var latestEntryDate = entriesByLocalDate.Keys.Max();
-        
-        // The streak is valid if the latest entry is from today or yesterday
+
+        var latestEntryDate = orderedDates.First();
         bool isOngoingStreak = latestEntryDate >= userLocalYesterday;
-        
+
         if (!isOngoingStreak)
         {
             return 0;
         }
-        
-        // Calculate the streak start date (earliest date in current streak)
-        var streakDates = new List<DateTime>();
-        var currentDate = latestEntryDate;
-        
-        // Add the latest entry date to our streak dates
-        streakDates.Add(currentDate);
-        
-        // Work backwards to find all consecutive days in the streak
-        for (int i = 1; i < streak; i++)
+
+        var streak = 1;
+        for (int i = 0; i < orderedDates.Count - 1; i++)
         {
-            currentDate = currentDate.AddDays(-1);
-            
-            // If we have an entry for this date, it's part of the streak
-            if (entriesByLocalDate.ContainsKey(currentDate))
+            var currentDate = orderedDates[i];
+            var previousDate = orderedDates[i + 1];
+            var daysBetween = (currentDate - previousDate).Days;
+
+            if (daysBetween == 1)
             {
-                streakDates.Add(currentDate);
+                streak++;
             }
             else
             {
-                // We've reached the end of consecutive entries
                 break;
             }
         }
-        
-        // Sum up pushups for all dates in the streak
+
+        var streakDates = orderedDates.Take(streak);
         return streakDates.Sum(date => entriesByLocalDate.GetValueOrDefault(date, 0));
     }
     
