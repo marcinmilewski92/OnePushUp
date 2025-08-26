@@ -1,6 +1,8 @@
 ﻿using Android.App;
 using Android.Content.PM;
 using Android.OS;
+using Android.Window;
+using AndroidX.Activity;
 
 namespace OnePushUp;
 
@@ -9,8 +11,19 @@ namespace OnePushUp;
                            ConfigChanges.ScreenLayout | ConfigChanges.SmallestScreenSize | ConfigChanges.Density)]
 public class MainActivity : MauiAppCompatActivity
 {
-    public override void OnBackPressed()
+protected override void OnCreate(Bundle? savedInstanceState)
+{
+    base.OnCreate(savedInstanceState);
+
+    // Always intercept the system back button and move the task to the background
+    OnBackPressedDispatcher.AddCallback(this, new BackCallback(this));
+}
+
+private sealed class BackCallback(Activity activity) : OnBackPressedCallback(true)
+{
+    public override void HandleOnBackPressed()
     {
-        MoveTaskToBack(true);
+        activity.MoveTaskToBack(true);
     }
+}
 }
