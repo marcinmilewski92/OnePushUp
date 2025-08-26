@@ -45,14 +45,14 @@ public class MainApplication : MauiApplication
             {
                 try
                 {
-                    bool notificationsEnabled = Preferences.Default.Get("notifications_enabled", false);
+                    bool notificationsEnabled = Preferences.Default.Get(NotificationConstants.NotificationsEnabledKey, false);
                     if (notificationsEnabled)
                     {
                         System.Console.WriteLine("Restoring notifications on app startup");
                         
                         // Send a broadcast to restore notifications
                         Intent restoreIntent = new Intent(this, Java.Lang.Class.FromType(typeof(Platforms.Android.NotificationReceiver)));
-                        restoreIntent.SetAction("RESTORE_NOTIFICATIONS");
+                        restoreIntent.SetAction(NotificationConstants.ActionRestoreNotifications);
                         SendBroadcast(restoreIntent);
                         
                         // Also try to schedule directly through the service for redundancy
@@ -96,7 +96,7 @@ public class MainApplication : MauiApplication
         try
         {
             Intent intent = new Intent(ApplicationContext, Java.Lang.Class.FromType(typeof(Platforms.Android.NotificationReceiver)));
-            intent.SetAction("RESTORE_NOTIFICATIONS");
+            intent.SetAction(NotificationConstants.ActionRestoreNotifications);
             intent.PutExtra("source", "application_startup");
             SendBroadcast(intent);
             System.Console.WriteLine("Sent restore notifications intent to receiver");
@@ -121,7 +121,7 @@ public class PackageReplacedReceiver : BroadcastReceiver
             
             // Send broadcast to our notification receiver
             Intent notificationIntent = new Intent(context, Java.Lang.Class.FromType(typeof(Platforms.Android.NotificationReceiver)));
-            notificationIntent.SetAction("RESTORE_NOTIFICATIONS");
+            notificationIntent.SetAction(NotificationConstants.ActionRestoreNotifications);
             notificationIntent.PutExtra("source", "package_replaced");
             context.SendBroadcast(notificationIntent);
         }
