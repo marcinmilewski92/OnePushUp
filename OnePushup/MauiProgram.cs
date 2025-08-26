@@ -19,8 +19,8 @@ public static class MauiProgram
         
         // Database and repositories
         builder.Services.AddDbContext<OnePushUpDbContext>();
-        builder.Services.AddTransient<UsersRepository>();
-        builder.Services.AddTransient<TrainingEntryRepository>();
+        builder.Services.AddTransient<IUsersRepository, UsersRepository>();
+        builder.Services.AddTransient<ITrainingEntryRepository, TrainingEntryRepository>();
         
         // Services
         builder.Services.AddTransient<TrainingService>();

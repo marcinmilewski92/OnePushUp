@@ -6,9 +6,9 @@ namespace OnePushUp.Services;
 
 public class TrainingService
 {
-    private readonly TrainingEntryRepository _trainingEntryRepository;
+    private readonly ITrainingEntryRepository _trainingEntryRepository;
 
-    public TrainingService(TrainingEntryRepository trainingEntryRepository)
+    public TrainingService(ITrainingEntryRepository trainingEntryRepository)
     {
         _trainingEntryRepository = trainingEntryRepository;
     }
