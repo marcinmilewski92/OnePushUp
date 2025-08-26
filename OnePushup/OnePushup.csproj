@@ -24,12 +24,21 @@
         <ApplicationTitle>OnePushUp</ApplicationTitle>
 
         <!-- App Identifier -->
-        <ApplicationId>com.companyname.onepushup</ApplicationId>
 
-        <!-- Versions -->
-        <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$(TargetFramework.Contains('-android'))">
+        <!-- Stable, immutable app identifier for Google Play -->
+        <ApplicationId>com.softwarecowboys.onepushup</ApplicationId>
+
+        <!-- Human‑readable version (can include -beta) -->
+        <ApplicationDisplayVersion>0.1.0-beta</ApplicationDisplayVersion>
+
+        <!-- versionCode (must be >=1 and increase with every Play upload) -->
         <ApplicationVersion>1</ApplicationVersion>
 
+        <!-- Google Play requires AAB -->
+        <AndroidPackageFormats>aab</AndroidPackageFormats>
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">14.2</SupportedOSPlatformVersion>
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">14.0</SupportedOSPlatformVersion>
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24.0</SupportedOSPlatformVersion>
