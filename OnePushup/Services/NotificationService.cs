@@ -542,7 +542,7 @@ public class NotificationService
             
             // Create intent with unique request code for this window alarm
             var intent = new Intent(context, Java.Lang.Class.FromType(typeof(Platforms.Android.NotificationReceiver)));
-            intent.SetAction(NotificationConstants.ActionDailyNotification);
+            intent.SetAction(NotificationConstants.ActionWindowNotificationAlarm);
             intent.PutExtra("notification_id", requestCode);
             intent.PutExtra("window_alarm", true);
             intent.PutExtra("minute_offset", minuteOffset);
