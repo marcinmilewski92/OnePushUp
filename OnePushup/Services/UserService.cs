@@ -13,10 +13,7 @@ public class UserService
         _usersRepository = usersRepository;
     }
 
-    public async Task<User?> GetCurrentUserAsync()
-    {
-        return await _usersRepository.GetAsync();
-    }
+    public Task<User?> GetCurrentUserAsync() => _usersRepository.GetAsync();
 
     public async Task<UserDto?> GetCurrentUserDtoAsync()
     {
