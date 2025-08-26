@@ -1,0 +1,26 @@
+trigger: none
+
+pr:
+  - main
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  buildConfiguration: 'Release'
+
+steps:
+  - task: UseDotNet@2
+    displayName: 'Install .NET SDK'
+    inputs:
+      packageType: 'sdk'
+      version: '8.0.x'
+
+  - script: dotnet workload install maui
+    displayName: 'Install MAUI workload'
+
+  - script: dotnet restore OnePushUp.sln
+    displayName: 'Restore dependencies'
+
+  - script: dotnet build OnePushUp.sln -c $(buildConfiguration) -f net8.0-windows10.0.19041.0 --no-restore
+    displayName: 'Build solution'
