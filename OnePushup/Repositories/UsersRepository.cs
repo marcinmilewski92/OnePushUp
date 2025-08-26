@@ -19,7 +19,9 @@ public class UsersRepository : IUsersRepository
     
     public async Task<User?> GetAsync()
     {
-        return await _db.Users.FirstOrDefaultAsync();
+        return await _db.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
     }
 
     public async Task UpdateAsync(User user)

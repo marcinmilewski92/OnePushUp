@@ -56,14 +56,16 @@ public class TrainingEntryRepository : ITrainingEntryRepository
         var todayEndUtc = userLocalToday.end.ToUniversalTime();
         
         return await _db.TrainingEntries
-            .FirstOrDefaultAsync(e => e.UserId == userId && 
-                                    e.DateTime >= todayStartUtc && 
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.UserId == userId &&
+                                    e.DateTime >= todayStartUtc &&
                                     e.DateTime < todayEndUtc);
     }
     
     public async Task<List<TrainingEntry>> GetEntriesForUserAsync(Guid userId)
     {
         return await _db.TrainingEntries
+            .AsNoTracking()
             .Where(e => e.UserId == userId)
             .OrderByDescending(e => e.DateTime)
             .ToListAsync();
@@ -72,6 +74,7 @@ public class TrainingEntryRepository : ITrainingEntryRepository
     private async Task<Dictionary<DateTime, int>> GetEntriesByLocalDateAsync(Guid userId)
     {
         var entries = await _db.TrainingEntries
+            .AsNoTracking()
             .Where(e => e.UserId == userId && e.NumberOfRepetitions > 0)
             .OrderByDescending(e => e.DateTime)
             .ToListAsync();
@@ -89,6 +92,7 @@ public class TrainingEntryRepository : ITrainingEntryRepository
         var todayEndUtc = dateRange.end.ToUniversalTime();
 
         var todayEntry = await _db.TrainingEntries
+            .AsNoTracking()
             .FirstOrDefaultAsync(e => e.UserId == userId &&
                                     e.DateTime >= todayStartUtc &&
                                     e.DateTime < todayEndUtc);
@@ -156,6 +160,7 @@ public class TrainingEntryRepository : ITrainingEntryRepository
     public async Task<int> GetTotalPushupsAsync(Guid userId)
     {
         return await _db.TrainingEntries
+            .AsNoTracking()
             .Where(e => e.UserId == userId)
             .SumAsync(e => e.NumberOfRepetitions);
     }
