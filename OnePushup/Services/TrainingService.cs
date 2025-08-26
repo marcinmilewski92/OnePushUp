@@ -53,26 +53,14 @@ public class TrainingService
         {
             return null;
         }
-        
-        return new TrainingEntryDto
-        {
-            Id = entry.Id,
-            DateTime = entry.DateTime,
-            NumberOfRepetitions = entry.NumberOfRepetitions,
-            UserId = entry.UserId
-        };
+
+        return MapToDto(entry);
     }
 
     public async Task<List<TrainingEntryDto>> GetEntriesForUserAsync(Guid userId)
     {
         var entries = await _trainingEntryRepository.GetEntriesForUserAsync(userId);
-        return entries.Select(e => new TrainingEntryDto
-        {
-            Id = e.Id,
-            DateTime = e.DateTime,
-            NumberOfRepetitions = e.NumberOfRepetitions,
-            UserId = e.UserId
-        }).ToList();
+        return entries.Select(MapToDto).ToList();
     }
 
     public async Task<StreakDataDto> GetStreakDataAsync(Guid userId)
@@ -92,5 +80,16 @@ public class TrainingService
     public async Task<bool> DeleteTodayEntryAsync(Guid userId)
     {
         return await _trainingEntryRepository.DeleteEntryForTodayAsync(userId);
+    }
+
+    private static TrainingEntryDto MapToDto(TrainingEntry entry)
+    {
+        return new TrainingEntryDto
+        {
+            Id = entry.Id,
+            DateTime = entry.DateTime,
+            NumberOfRepetitions = entry.NumberOfRepetitions,
+            UserId = entry.UserId
+        };
     }
 }
