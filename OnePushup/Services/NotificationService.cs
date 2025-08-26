@@ -87,18 +87,14 @@ public class NotificationService
     {
         try
         {
-            Preferences.Default.Set(EnabledKey, enabled);
-            
-            // Schedule or cancel notifications based on the new setting
-            var settings = await GetNotificationSettingsAsync();
-            if (enabled && settings.Time.HasValue)
+            var current = await GetNotificationSettingsAsync();
+            var updated = new NotificationSettings
             {
-                await ScheduleNotificationAsync(settings.Time.Value);
-            }
-            else
-            {
-                await CancelNotificationsAsync();
-            }
+                Enabled = enabled,
+                Time = current.Time
+            };
+
+            await UpdateNotificationSettingsAsync(updated);
         }
         catch (Exception ex)
         {
@@ -111,14 +107,14 @@ public class NotificationService
     {
         try
         {
-            Preferences.Default.Set(TimeKey, time.Ticks);
-            
-            // If notifications are enabled, reschedule with the new time
-            var settings = await GetNotificationSettingsAsync();
-            if (settings.Enabled)
+            var current = await GetNotificationSettingsAsync();
+            var updated = new NotificationSettings
             {
-                await ScheduleNotificationAsync(time);
-            }
+                Enabled = current.Enabled,
+                Time = time
+            };
+
+            await UpdateNotificationSettingsAsync(updated);
         }
         catch (Exception ex)
         {
