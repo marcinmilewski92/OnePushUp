@@ -1,8 +1,9 @@
 using Android.App;
 using Android.Content;
-using Android.OS; 
+using Android.OS;
 using AndroidX.Core.App;
 using Microsoft.Maui.Storage;
+using OnePushUp;
 using System;
 
 namespace OnePushUp.Platforms.Android;
@@ -16,12 +17,6 @@ namespace OnePushUp.Platforms.Android;
 })]
 public class NotificationReceiver : BroadcastReceiver
 {
-    private const string EnabledKey = "notifications_enabled";
-    private const string TimeKey = "notification_time";
-    
-    // System alarm actions
-    private const string ACTION_DAILY_NOTIFICATION = "com.onepushup.DAILY_NOTIFICATION";
-    private const string ACTION_RESTORE_NOTIFICATIONS = "RESTORE_NOTIFICATIONS";
 
     public override void OnReceive(Context context, Intent intent)
     {
@@ -37,7 +32,7 @@ public class NotificationReceiver : BroadcastReceiver
                 action == Intent.ActionLockedBootCompleted || 
                 action == "android.intent.action.QUICKBOOT_POWERON" || 
                 action == "android.intent.action.MY_PACKAGE_REPLACED" ||
-                action == ACTION_RESTORE_NOTIFICATIONS)
+                action == NotificationConstants.ActionRestoreNotifications)
             {
                 Console.WriteLine("NotificationReceiver: System boot or app updated, restoring notifications");
                 RestoreNotificationsAfterReboot(context);
@@ -54,12 +49,12 @@ public class NotificationReceiver : BroadcastReceiver
             }
             
             // For all other notifications, show the regular notification
-            if (action == ACTION_DAILY_NOTIFICATION || 
-                action == "DAILY_NOTIFICATION_EXACT" || 
-                action == "DAILY_NOTIFICATION_INEXACT" || 
-                action == "DAILY_NOTIFICATION_REPEAT" ||
-                action == "WINDOW_NOTIFICATION_ALARM" ||
-                action == "TEST_NOTIFICATION_ALARM")
+            if (action == NotificationConstants.ActionDailyNotification ||
+                action == NotificationConstants.ActionDailyNotificationExact ||
+                action == NotificationConstants.ActionDailyNotificationInexact ||
+                action == NotificationConstants.ActionDailyNotificationRepeat ||
+                action == NotificationConstants.ActionWindowNotificationAlarm ||
+                action == NotificationConstants.ActionTestNotification)
             {
                 ShowPushupNotification(context, intent);
                 
@@ -94,11 +89,11 @@ public class NotificationReceiver : BroadcastReceiver
             if (global::Android.OS.Build.VERSION.SdkInt >= global::Android.OS.BuildVersionCodes.O)
             {
                 var channel = new NotificationChannel(
-                    "pushup_reminders",
-                    "Pushup Reminders",
+                    NotificationConstants.ChannelId,
+                    NotificationConstants.ChannelName,
                     NotificationImportance.High)
                 {
-                    Description = "Daily reminders to do your pushups",
+                    Description = NotificationConstants.ChannelDescription,
                     LockscreenVisibility = NotificationVisibility.Public
                 };
                 
@@ -116,9 +111,9 @@ public class NotificationReceiver : BroadcastReceiver
             notificationIntent.AddCategory(Intent.CategoryLauncher);
             
             var pendingIntent = PendingIntent.GetActivity(
-                context, 
-                0, 
-                notificationIntent, 
+                context,
+                NotificationConstants.RequestCodeMainActivity,
+                notificationIntent,
                 PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
             
             // Get the notification time from intent extras (if available)
@@ -168,7 +163,7 @@ public class NotificationReceiver : BroadcastReceiver
             string approach = intent.GetStringExtra("approach") ?? "default";
             
             // Build the main notification
-            var builder = new NotificationCompat.Builder(context, "pushup_reminders")
+            var builder = new NotificationCompat.Builder(context, NotificationConstants.ChannelId)
                 .SetContentTitle("OnePushUp Reminder")
                 .SetContentText($"Time to do your daily pushup! ({approach})")
                 .SetSmallIcon(iconId)
@@ -186,7 +181,7 @@ public class NotificationReceiver : BroadcastReceiver
             }
             
             // Show the notification
-            int notificationId = intent.GetIntExtra("notification_id", 1);
+            int notificationId = intent.GetIntExtra("notification_id", NotificationConstants.RequestCodeExact);
             notificationManager.Notify(notificationId, builder.Build());
             
             Console.WriteLine($"NotificationReceiver: Pushup notification displayed with ID {notificationId} at {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
@@ -210,11 +205,11 @@ public class NotificationReceiver : BroadcastReceiver
             if (global::Android.OS.Build.VERSION.SdkInt >= global::Android.OS.BuildVersionCodes.O)
             {
                 var channel = new NotificationChannel(
-                    "pushup_reminders",
-                    "Pushup Reminders",
+                    NotificationConstants.ChannelId,
+                    NotificationConstants.ChannelName,
                     NotificationImportance.High)
                 {
-                    Description = "Daily reminders to do your pushups",
+                    Description = NotificationConstants.ChannelDescription,
                     LockscreenVisibility = NotificationVisibility.Public
                 };
                 
@@ -229,16 +224,16 @@ public class NotificationReceiver : BroadcastReceiver
             notificationIntent.AddCategory(Intent.CategoryLauncher);
             
             var pendingIntent = PendingIntent.GetActivity(
-                context, 
-                0, 
-                notificationIntent, 
+                context,
+                NotificationConstants.RequestCodeMainActivity,
+                notificationIntent,
                 PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
             
             // Get icon
             int iconId = global::Android.Resource.Drawable.IcDialogInfo;
             
             // Build test notification
-            var builder = new NotificationCompat.Builder(context, "pushup_reminders")
+            var builder = new NotificationCompat.Builder(context, NotificationConstants.ChannelId)
                 .SetContentTitle("OnePushUp Test")
                 .SetContentText($"Notification system is working! Current time: {DateTime.Now:HH:mm:ss}")
                 .SetSmallIcon(iconId)
@@ -248,7 +243,7 @@ public class NotificationReceiver : BroadcastReceiver
                 .SetVisibility(NotificationCompat.VisibilityPublic);
             
             // Show the notification
-            int notificationId = intent.GetIntExtra("notification_id", 999);
+            int notificationId = intent.GetIntExtra("notification_id", NotificationConstants.RequestCodeTestNotification);
             notificationManager.Notify(notificationId, builder.Build());
             
             Console.WriteLine($"NotificationReceiver: Test notification displayed at {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
@@ -283,7 +278,7 @@ public class NotificationReceiver : BroadcastReceiver
         try
         {
             // Check if notifications were enabled before reboot
-            bool enabled = Preferences.Default.Get(EnabledKey, false);
+            bool enabled = Preferences.Default.Get(NotificationConstants.NotificationsEnabledKey, false);
             if (!enabled)
             {
                 Console.WriteLine("NotificationReceiver: Notifications were disabled, not restoring");
@@ -291,7 +286,7 @@ public class NotificationReceiver : BroadcastReceiver
             }
             
             // Get the stored notification time
-            long timeTicks = Preferences.Default.Get(TimeKey, 0L);
+            long timeTicks = Preferences.Default.Get(NotificationConstants.NotificationTimeKey, 0L);
             if (timeTicks == 0)
             {
                 Console.WriteLine("NotificationReceiver: No notification time stored, using default");
@@ -346,40 +341,40 @@ public class NotificationReceiver : BroadcastReceiver
             
             // 1. Exact alarm
             var exactIntent = new Intent(context, Java.Lang.Class.FromType(typeof(NotificationReceiver)));
-            exactIntent.SetAction(ACTION_DAILY_NOTIFICATION);
-            exactIntent.PutExtra("notification_id", 1);
+            exactIntent.SetAction(NotificationConstants.ActionDailyNotification);
+            exactIntent.PutExtra("notification_id", NotificationConstants.RequestCodeExact);
             exactIntent.PutExtra("notification_time", $"{calendar.Time}");
             exactIntent.PutExtra("approach", "exact");
             
             var exactPendingIntent = PendingIntent.GetBroadcast(
                 context,
-                1,
+                NotificationConstants.RequestCodeExact,
                 exactIntent,
                 PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
             
             // 2. Inexact alarm
             var inexactIntent = new Intent(context, Java.Lang.Class.FromType(typeof(NotificationReceiver)));
-            inexactIntent.SetAction(ACTION_DAILY_NOTIFICATION);
-            inexactIntent.PutExtra("notification_id", 2);
+            inexactIntent.SetAction(NotificationConstants.ActionDailyNotification);
+            inexactIntent.PutExtra("notification_id", NotificationConstants.RequestCodeInexact);
             inexactIntent.PutExtra("notification_time", $"{calendar.Time}");
             inexactIntent.PutExtra("approach", "inexact");
             
             var inexactPendingIntent = PendingIntent.GetBroadcast(
                 context,
-                2,
+                NotificationConstants.RequestCodeInexact,
                 inexactIntent,
                 PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
             
             // 3. Repeating alarm
             var repeatingIntent = new Intent(context, Java.Lang.Class.FromType(typeof(NotificationReceiver)));
-            repeatingIntent.SetAction(ACTION_DAILY_NOTIFICATION);
-            repeatingIntent.PutExtra("notification_id", 3);
+            repeatingIntent.SetAction(NotificationConstants.ActionDailyNotification);
+            repeatingIntent.PutExtra("notification_id", NotificationConstants.RequestCodeRepeating);
             repeatingIntent.PutExtra("notification_time", $"{calendar.Time}");
             repeatingIntent.PutExtra("approach", "repeating");
             
             var repeatingPendingIntent = PendingIntent.GetBroadcast(
                 context,
-                3,
+                NotificationConstants.RequestCodeRepeating,
                 repeatingIntent,
                 PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
             
@@ -451,10 +446,10 @@ public class NotificationReceiver : BroadcastReceiver
             }
             
             // Set window alarms as additional backup (+/- 2 minutes)
-            SetWindowAlarm(context, alarmManager, time, -2, 101);
-            SetWindowAlarm(context, alarmManager, time, -1, 102);
-            SetWindowAlarm(context, alarmManager, time, 1, 103);
-            SetWindowAlarm(context, alarmManager, time, 2, 104);
+            SetWindowAlarm(context, alarmManager, time, -2, NotificationConstants.RequestCodeWindowMinus2);
+            SetWindowAlarm(context, alarmManager, time, -1, NotificationConstants.RequestCodeWindowMinus1);
+            SetWindowAlarm(context, alarmManager, time, 1, NotificationConstants.RequestCodeWindowPlus1);
+            SetWindowAlarm(context, alarmManager, time, 2, NotificationConstants.RequestCodeWindowPlus2);
             
             Console.WriteLine("NotificationReceiver: Multiple alarms scheduled after boot/restore");
         }
@@ -470,7 +465,7 @@ public class NotificationReceiver : BroadcastReceiver
         try
         {
             // Make sure notifications are still enabled
-            bool enabled = Preferences.Default.Get(EnabledKey, false);
+            bool enabled = Preferences.Default.Get(NotificationConstants.NotificationsEnabledKey, false);
             if (!enabled)
             {
                 Console.WriteLine("NotificationReceiver: Notifications are disabled, not rescheduling");
@@ -478,7 +473,7 @@ public class NotificationReceiver : BroadcastReceiver
             }
             
             // Get the notification time preference
-            long timeTicks = Preferences.Default.Get(TimeKey, 0L);
+            long timeTicks = Preferences.Default.Get(NotificationConstants.NotificationTimeKey, 0L);
             if (timeTicks == 0)
             {
                 Console.WriteLine("NotificationReceiver: No notification time stored, using default");
@@ -512,40 +507,40 @@ public class NotificationReceiver : BroadcastReceiver
             
             // 1. Exact alarm for tomorrow
             var exactIntent = new Intent(context, Java.Lang.Class.FromType(typeof(NotificationReceiver)));
-            exactIntent.SetAction(ACTION_DAILY_NOTIFICATION);
-            exactIntent.PutExtra("notification_id", 1);
+            exactIntent.SetAction(NotificationConstants.ActionDailyNotification);
+            exactIntent.PutExtra("notification_id", NotificationConstants.RequestCodeExact);
             exactIntent.PutExtra("notification_time", $"{calendar.Time}");
             exactIntent.PutExtra("approach", "exact_tomorrow");
             
             var exactPendingIntent = PendingIntent.GetBroadcast(
                 context,
-                1,
+                NotificationConstants.RequestCodeExact,
                 exactIntent,
                 PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
             
             // 2. Inexact alarm for tomorrow
             var inexactIntent = new Intent(context, Java.Lang.Class.FromType(typeof(NotificationReceiver)));
-            inexactIntent.SetAction(ACTION_DAILY_NOTIFICATION);
-            inexactIntent.PutExtra("notification_id", 2);
+            inexactIntent.SetAction(NotificationConstants.ActionDailyNotification);
+            inexactIntent.PutExtra("notification_id", NotificationConstants.RequestCodeInexact);
             inexactIntent.PutExtra("notification_time", $"{calendar.Time}");
             inexactIntent.PutExtra("approach", "inexact_tomorrow");
             
             var inexactPendingIntent = PendingIntent.GetBroadcast(
                 context,
-                2,
+                NotificationConstants.RequestCodeInexact,
                 inexactIntent,
                 PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
             
             // 3. Repeating alarm
             var repeatingIntent = new Intent(context, Java.Lang.Class.FromType(typeof(NotificationReceiver)));
-            repeatingIntent.SetAction(ACTION_DAILY_NOTIFICATION);
-            repeatingIntent.PutExtra("notification_id", 3);
+            repeatingIntent.SetAction(NotificationConstants.ActionDailyNotification);
+            repeatingIntent.PutExtra("notification_id", NotificationConstants.RequestCodeRepeating);
             repeatingIntent.PutExtra("notification_time", $"{calendar.Time}");
             repeatingIntent.PutExtra("approach", "repeating_tomorrow");
             
             var repeatingPendingIntent = PendingIntent.GetBroadcast(
                 context,
-                3,
+                NotificationConstants.RequestCodeRepeating,
                 repeatingIntent,
                 PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
             
@@ -614,10 +609,10 @@ public class NotificationReceiver : BroadcastReceiver
             }
             
             // Also set window alarms for tomorrow
-            SetWindowAlarm(context, alarmManager, scheduledTime, -2, 101);
-            SetWindowAlarm(context, alarmManager, scheduledTime, -1, 102);
-            SetWindowAlarm(context, alarmManager, scheduledTime, 1, 103);
-            SetWindowAlarm(context, alarmManager, scheduledTime, 2, 104);
+            SetWindowAlarm(context, alarmManager, scheduledTime, -2, NotificationConstants.RequestCodeWindowMinus2);
+            SetWindowAlarm(context, alarmManager, scheduledTime, -1, NotificationConstants.RequestCodeWindowMinus1);
+            SetWindowAlarm(context, alarmManager, scheduledTime, 1, NotificationConstants.RequestCodeWindowPlus1);
+            SetWindowAlarm(context, alarmManager, scheduledTime, 2, NotificationConstants.RequestCodeWindowPlus2);
         }
         catch (Exception ex)
         {
@@ -646,7 +641,7 @@ public class NotificationReceiver : BroadcastReceiver
             
             // Create intent with unique request code for this window alarm
             var intent = new Intent(context, Java.Lang.Class.FromType(typeof(NotificationReceiver)));
-            intent.SetAction(ACTION_DAILY_NOTIFICATION);
+            intent.SetAction(NotificationConstants.ActionDailyNotification);
             intent.PutExtra("notification_id", requestCode);
             intent.PutExtra("window_alarm", true);
             intent.PutExtra("minute_offset", minuteOffset);

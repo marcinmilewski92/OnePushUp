@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using OnePushUp;
 using OnePushUp.Models;
 #if ANDROID
 using Android.App;
@@ -16,9 +17,6 @@ namespace OnePushUp.Services;
 public class NotificationService
 {
     private readonly ILogger<NotificationService> _logger;
-    private const string EnabledKey = "notifications_enabled";
-    private const string TimeKey = "notification_time";
-    private const string LastScheduledKey = "last_notification_scheduled";
 
     public NotificationService(ILogger<NotificationService> logger)
     {
@@ -29,10 +27,10 @@ public class NotificationService
     {
         try
         {
-            var enabled = Preferences.Default.Get(EnabledKey, false);
+            var enabled = Preferences.Default.Get(NotificationConstants.NotificationsEnabledKey, false);
             
             // Time is stored as ticks
-            var timeTicks = Preferences.Default.Get(TimeKey, 0L);
+            var timeTicks = Preferences.Default.Get(NotificationConstants.NotificationTimeKey, 0L);
             TimeSpan? time = timeTicks > 0 ? TimeSpan.FromTicks(timeTicks) : new TimeSpan(8, 0, 0);
             
             return Task.FromResult(new NotificationSettings
@@ -57,11 +55,11 @@ public class NotificationService
         try
         {
             // Update both enabled state and time in a single method
-            Preferences.Default.Set(EnabledKey, settings.Enabled);
+            Preferences.Default.Set(NotificationConstants.NotificationsEnabledKey, settings.Enabled);
             
             if (settings.Time.HasValue)
             {
-                Preferences.Default.Set(TimeKey, settings.Time.Value.Ticks);
+                Preferences.Default.Set(NotificationConstants.NotificationTimeKey, settings.Time.Value.Ticks);
             }
             
             // Schedule or cancel notifications based on the new settings
@@ -87,7 +85,7 @@ public class NotificationService
     {
         try
         {
-            Preferences.Default.Set(EnabledKey, enabled);
+            Preferences.Default.Set(NotificationConstants.NotificationsEnabledKey, enabled);
             
             // Schedule or cancel notifications based on the new setting
             var settings = await GetNotificationSettingsAsync();
@@ -111,7 +109,7 @@ public class NotificationService
     {
         try
         {
-            Preferences.Default.Set(TimeKey, time.Ticks);
+            Preferences.Default.Set(NotificationConstants.NotificationTimeKey, time.Ticks);
             
             // If notifications are enabled, reschedule with the new time
             var settings = await GetNotificationSettingsAsync();
@@ -148,11 +146,11 @@ public class NotificationService
             if (Android.OS.Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.O)
             {
                 var channel = new NotificationChannel(
-                    "pushup_reminders",
-                    "Pushup Reminders",
+                    NotificationConstants.ChannelId,
+                    NotificationConstants.ChannelName,
                     NotificationImportance.High)
                 {
-                    Description = "Daily reminders to do your pushups",
+                    Description = NotificationConstants.ChannelDescription,
                     LockscreenVisibility = NotificationVisibility.Public
                 };
                 
@@ -168,16 +166,16 @@ public class NotificationService
             notificationIntent.SetFlags(ActivityFlags.ClearTop | ActivityFlags.SingleTop);
             
             var pendingIntent = PendingIntent.GetActivity(
-                context, 
-                0, 
-                notificationIntent, 
+                context,
+                NotificationConstants.RequestCodeMainActivity,
+                notificationIntent,
                 PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
             
             // Use the default Android system information icon
             int iconId = Android.Resource.Drawable.IcDialogInfo;
             
             // Build the notification
-            var builder = new NotificationCompat.Builder(context, "pushup_reminders")
+            var builder = new NotificationCompat.Builder(context, NotificationConstants.ChannelId)
                 .SetContentTitle("OnePushUp Test")
                 .SetContentText($"This is a test notification - {DateTime.Now:HH:mm:ss}")
                 .SetSmallIcon(iconId)
@@ -318,41 +316,41 @@ public class NotificationService
             
             // Intent for approach 1 (exact alarm)
             var exactIntent = new Intent(context, Java.Lang.Class.FromType(typeof(Platforms.Android.NotificationReceiver)));
-            exactIntent.SetAction("com.onepushup.DAILY_NOTIFICATION");
-            exactIntent.PutExtra("notification_id", 1);
+            exactIntent.SetAction(NotificationConstants.ActionDailyNotification);
+            exactIntent.PutExtra("notification_id", NotificationConstants.RequestCodeExact);
             exactIntent.PutExtra("notification_time", $"{calendar.Time}");
             exactIntent.PutExtra("approach", "exact");
             
             var exactPendingIntent = PendingIntent.GetBroadcast(
-                context, 
-                1, 
-                exactIntent, 
+                context,
+                NotificationConstants.RequestCodeExact,
+                exactIntent,
                 PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
             
             // Intent for approach 2 (inexact alarm)
             var inexactIntent = new Intent(context, Java.Lang.Class.FromType(typeof(Platforms.Android.NotificationReceiver)));
-            inexactIntent.SetAction("com.onepushup.DAILY_NOTIFICATION");
-            inexactIntent.PutExtra("notification_id", 2);
+            inexactIntent.SetAction(NotificationConstants.ActionDailyNotification);
+            inexactIntent.PutExtra("notification_id", NotificationConstants.RequestCodeInexact);
             inexactIntent.PutExtra("notification_time", $"{calendar.Time}");
             inexactIntent.PutExtra("approach", "inexact");
             
             var inexactPendingIntent = PendingIntent.GetBroadcast(
-                context, 
-                2, 
-                inexactIntent, 
+                context,
+                NotificationConstants.RequestCodeInexact,
+                inexactIntent,
                 PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
             
             // Intent for approach 3 (repeating alarm)
             var repeatingIntent = new Intent(context, Java.Lang.Class.FromType(typeof(Platforms.Android.NotificationReceiver)));
-            repeatingIntent.SetAction("com.onepushup.DAILY_NOTIFICATION");
-            repeatingIntent.PutExtra("notification_id", 3);
+            repeatingIntent.SetAction(NotificationConstants.ActionDailyNotification);
+            repeatingIntent.PutExtra("notification_id", NotificationConstants.RequestCodeRepeating);
             repeatingIntent.PutExtra("notification_time", $"{calendar.Time}");
             repeatingIntent.PutExtra("approach", "repeating");
             
             var repeatingPendingIntent = PendingIntent.GetBroadcast(
-                context, 
-                3, 
-                repeatingIntent, 
+                context,
+                NotificationConstants.RequestCodeRepeating,
+                repeatingIntent,
                 PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
             
             // Check if we can schedule exact alarms on newer Android versions
@@ -413,17 +411,17 @@ public class NotificationService
             
             // 3. APPROACH 4: Set multiple window alarms
             // Set window alarms +/- 2 minutes to ensure a notification within a reasonable time window
-            SetWindowAlarm(context, alarmManager, time, -2, 101);
-            SetWindowAlarm(context, alarmManager, time, -1, 102);
-            SetWindowAlarm(context, alarmManager, time, 1, 103);
-            SetWindowAlarm(context, alarmManager, time, 2, 104);
+            SetWindowAlarm(context, alarmManager, time, -2, NotificationConstants.RequestCodeWindowMinus2);
+            SetWindowAlarm(context, alarmManager, time, -1, NotificationConstants.RequestCodeWindowMinus1);
+            SetWindowAlarm(context, alarmManager, time, 1, NotificationConstants.RequestCodeWindowPlus1);
+            SetWindowAlarm(context, alarmManager, time, 2, NotificationConstants.RequestCodeWindowPlus2);
             
             // Create a test notification to appear 10 seconds from now to ensure system is working
             SendTestNotificationDelayed(context, 10000);
             
             // Store the settings
-            Preferences.Default.Set(LastScheduledKey, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-            Preferences.Default.Set("notification_target_time", calendar.Time.ToString());
+            Preferences.Default.Set(NotificationConstants.LastNotificationScheduledKey, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            Preferences.Default.Set(NotificationConstants.NotificationTargetTimeKey, calendar.Time.ToString());
             
             _logger.LogInformation($"Multiple notification alarms scheduled for {time.Hours:D2}:{time.Minutes:D2}");
             
@@ -464,11 +462,11 @@ public class NotificationService
                         if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
                         {
                             var channel = new NotificationChannel(
-                                "pushup_reminders",
-                                "Pushup Reminders",
+                                NotificationConstants.ChannelId,
+                                NotificationConstants.ChannelName,
                                 NotificationImportance.High)
                             {
-                                Description = "Daily reminders to do your pushups",
+                                Description = NotificationConstants.ChannelDescription,
                                 LockscreenVisibility = NotificationVisibility.Public
                             };
                             
@@ -481,16 +479,16 @@ public class NotificationService
                         notificationIntent.SetFlags(ActivityFlags.ClearTop | ActivityFlags.SingleTop | ActivityFlags.NewTask);
                         
                         var pendingIntent = PendingIntent.GetActivity(
-                            context, 
-                            500, 
-                            notificationIntent, 
+                            context,
+                            NotificationConstants.RequestCodeDirectNotification,
+                            notificationIntent,
                             PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
                         
                         // Get icon
                         int iconId = Android.Resource.Drawable.IcDialogInfo;
                         
                         // Build notification
-                        var builder = new NotificationCompat.Builder(context, "pushup_reminders")
+                        var builder = new NotificationCompat.Builder(context, NotificationConstants.ChannelId)
                             .SetContentTitle("OnePushUp Reminder")
                             .SetContentText("Time to do your daily pushup! Do it now to not lose your streak!")
                             .SetSmallIcon(iconId)
@@ -501,7 +499,7 @@ public class NotificationService
                             .SetDefaults(NotificationCompat.DefaultAll);
                         
                         // Show notification
-                        notificationManager.Notify(500, builder.Build());
+                        notificationManager.Notify(NotificationConstants.RequestCodeDirectNotification, builder.Build());
                         _logger.LogInformation("Direct notification displayed successfully");
                     }
                     catch (Exception ex)
@@ -544,7 +542,7 @@ public class NotificationService
             
             // Create intent with unique request code for this window alarm
             var intent = new Intent(context, Java.Lang.Class.FromType(typeof(Platforms.Android.NotificationReceiver)));
-            intent.SetAction("com.onepushup.DAILY_NOTIFICATION");
+            intent.SetAction(NotificationConstants.ActionDailyNotification);
             intent.PutExtra("notification_id", requestCode);
             intent.PutExtra("window_alarm", true);
             intent.PutExtra("minute_offset", minuteOffset);
@@ -597,7 +595,7 @@ public class NotificationService
             var intent = new Intent(context, Java.Lang.Class.FromType(typeof(Platforms.Android.NotificationReceiver)));
             var pendingIntent = PendingIntent.GetBroadcast(
                 context,
-                1,
+                NotificationConstants.RequestCodeExact,
                 intent,
                 PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
             
@@ -619,15 +617,15 @@ public class NotificationService
         {
             // Create the intent for a test notification with a different request code
             var intent = new Intent(context, Java.Lang.Class.FromType(typeof(Platforms.Android.NotificationReceiver)));
-            intent.SetAction("TEST_NOTIFICATION_ALARM");
-            intent.PutExtra("notification_id", 999);
+            intent.SetAction(NotificationConstants.ActionTestNotification);
+            intent.PutExtra("notification_id", NotificationConstants.RequestCodeTestNotification);
             intent.PutExtra("test_notification", true);
             intent.PutExtra("notification_time", $"{DateTime.Now.AddMilliseconds(delayMs):yyyy-MM-dd HH:mm:ss}");
             
             var pendingIntent = PendingIntent.GetBroadcast(
-                context, 
-                999, // Different request code
-                intent, 
+                context,
+                NotificationConstants.RequestCodeTestNotification,
+                intent,
                 PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
             
             // Schedule using AlarmManager
