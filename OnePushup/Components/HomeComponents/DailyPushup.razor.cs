@@ -121,7 +121,32 @@ public partial class DailyPushup
         _isEditing = false;
         _message = string.Empty;
     }
-    
+
+    private bool TryGetRepetitions(out int repetitions)
+    {
+        repetitions = 0;
+
+        if (_selectedOption == PushupOption.Yes)
+        {
+            repetitions = 1;
+        }
+        else if (_selectedOption == PushupOption.YesMore)
+        {
+            if (_repetitions < 2)
+            {
+                _repetitionError = true;
+                _isError = true;
+                _message = "Please enter a valid number of pushups (minimum 2).";
+                return false;
+            }
+
+            repetitions = _repetitions;
+        }
+
+        // For PushupOption.No, repetitions remains 0
+        return true;
+    }
+
     private async Task UpdateTrainingEntry()
     {
         if (_lastEntry == null)
@@ -137,28 +162,12 @@ public partial class DailyPushup
             _message = string.Empty;
             _isError = false;
             _repetitionError = false;
-            
-            int repetitions = 0; // Default is 0
-            
-            if (_selectedOption == PushupOption.Yes)
+
+            if (!TryGetRepetitions(out var repetitions))
             {
-                repetitions = 1; // Set to 1 for "Yes" option
+                return;
             }
-            else if (_selectedOption == PushupOption.YesMore)
-            {
-                if (_repetitions < 2)
-                {
-                    _repetitionError = true;
-                    _isError = true;
-                    _message = "Please enter a valid number of pushups (minimum 2).";
-                    _isSaving = false;
-                    return;
-                }
-                
-                repetitions = _repetitions;
-            }
-            // For PushupOption.No, repetitions remains 0
-            
+
             // Update the existing entry
             bool success = await TrainingService.UpdateEntryAsync(_lastEntry.Id, repetitions);
             
@@ -208,27 +217,12 @@ public partial class DailyPushup
             _message = string.Empty;
             _isError = false;
             _repetitionError = false;
-            
-            int repetitions = 0; // Default is now 0
-            
-            if (_selectedOption == PushupOption.Yes)
+
+            if (!TryGetRepetitions(out var repetitions))
             {
-                repetitions = 1; // Set to 1 for "Yes" option
+                return;
             }
-            else if (_selectedOption == PushupOption.YesMore)
-            {
-                if (_repetitions < 2)
-                {
-                    _repetitionError = true;
-                    _isError = true;
-                    _message = "Please enter a valid number of pushups (minimum 2).";
-                    return;
-                }
-                
-                repetitions = _repetitions;
-            }
-            // For PushupOption.No, repetitions remains 0
-            
+
             // Always save an entry, even for "No" responses
             await TrainingService.CreateEntryAsync(CurrentUser.Id, repetitions);
             
