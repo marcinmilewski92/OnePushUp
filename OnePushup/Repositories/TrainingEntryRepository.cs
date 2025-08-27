@@ -44,33 +44,29 @@ public class TrainingEntryRepository : ITrainingEntryRepository
         var result = await _db.SaveChangesAsync();
         return result > 0;
     }
-    
-    public async Task<bool> HasEntryForTodayAsync(Guid userId)
+
+    private async Task<TrainingEntry?> FindTodayEntryAsync(Guid userId)
     {
         var (start, end) = GetUserLocalDateRange();
         var startUtc = start.ToUniversalTime();
         var endUtc = end.ToUniversalTime();
-        var entries = await _db.TrainingEntries.AsNoTracking()
-            .Where(e => e.UserId == userId)
-            .Select(e => e.DateTime)
-            .ToListAsync();
 
-        return entries.Any(date => date >= startUtc && date < endUtc);
+        return await _db.TrainingEntries
+            .AsNoTracking()
+            .Where(e => e.UserId == userId && e.DateTime >= startUtc && e.DateTime < endUtc)
+            .OrderByDescending(e => e.DateTime)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<bool> HasEntryForTodayAsync(Guid userId)
+    {
+        var entry = await FindTodayEntryAsync(userId);
+        return entry != null;
     }
 
     public async Task<TrainingEntry?> GetEntryForTodayAsync(Guid userId)
     {
-        var (start, end) = GetUserLocalDateRange();
-        var startUtc = start.ToUniversalTime();
-        var endUtc = end.ToUniversalTime();
-        var entries = await _db.TrainingEntries.AsNoTracking()
-            .Where(e => e.UserId == userId)
-            .ToListAsync();
-
-        return entries
-            .Where(e => e.DateTime >= startUtc && e.DateTime < endUtc)
-            .OrderByDescending(e => e.DateTime)
-            .FirstOrDefault();
+        return await FindTodayEntryAsync(userId);
     }
     
     public async Task<List<TrainingEntry>> GetEntriesForUserAsync(Guid userId)
@@ -159,17 +155,7 @@ public class TrainingEntryRepository : ITrainingEntryRepository
 
     public async Task<bool> DeleteEntryForTodayAsync(Guid userId)
     {
-        var (start, end) = GetUserLocalDateRange();
-        var startUtc = start.ToUniversalTime();
-        var endUtc = end.ToUniversalTime();
-
-        var entries = await _db.TrainingEntries
-            .Where(e => e.UserId == userId)
-            .ToListAsync();
-
-        var todayEntry = entries
-            .FirstOrDefault(e => e.DateTime >= startUtc && e.DateTime < endUtc);
-
+        var todayEntry = await FindTodayEntryAsync(userId);
         if (todayEntry == null)
         {
             return false; // No entry found to delete
