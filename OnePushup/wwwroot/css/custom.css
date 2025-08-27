@@ -40,6 +40,7 @@ main {
   padding-bottom: 60px; /* Space for footer */
 }
 
+/*
 .sidebar {
   background-color: var(--secondary-color);
   background-image: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
@@ -63,6 +64,7 @@ main {
   justify-content: center;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
+*/
 
 .top-row {
   background-color: var(--card-color);
@@ -75,10 +77,12 @@ main {
   margin-left: 250px;
 }
 
+/*
 article.content {
   padding: 2rem;
   margin-left: 250px;
 }
+*/
 
 /* Cards */
 .card {
