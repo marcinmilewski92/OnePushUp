@@ -20,14 +20,14 @@ public class TrainingEntryRepository : ITrainingEntryRepository
         // This ensures database consistency while respecting user's time zone
         if (entry.DateTime == default)
         {
-            entry.DateTime = DateTime.UtcNow;
+            entry.DateTime = DateTimeOffset.UtcNow;
         }
-        else if (entry.DateTime.Kind != DateTimeKind.Utc)
+        else if (entry.DateTime.Offset != TimeSpan.Zero)
         {
             // Convert to UTC if not already
             entry.DateTime = entry.DateTime.ToUniversalTime();
         }
-        
+
         var entryResult = await _db.TrainingEntries.AddAsync(entry);
         await _db.SaveChangesAsync();
         return entryResult.Entity.Id;
@@ -57,11 +57,13 @@ public class TrainingEntryRepository : ITrainingEntryRepository
         var todayStartUtc = userLocalToday.start.ToUniversalTime();
         var todayEndUtc = userLocalToday.end.ToUniversalTime();
         
-        return await _db.TrainingEntries
+        var entries = await _db.TrainingEntries
             .AsNoTracking()
-            .FirstOrDefaultAsync(e => e.UserId == userId &&
-                                    e.DateTime >= todayStartUtc &&
-                                    e.DateTime < todayEndUtc);
+            .Where(e => e.UserId == userId)
+            .ToListAsync();
+
+        return entries.FirstOrDefault(e => e.DateTime >= todayStartUtc &&
+                                            e.DateTime < todayEndUtc);
     }
     
     public async Task<List<TrainingEntry>> GetEntriesForUserAsync(Guid userId)
@@ -73,18 +75,6 @@ public class TrainingEntryRepository : ITrainingEntryRepository
             .ToListAsync();
     }
 
-    private async Task<List<DailyTotal>> GetEntriesByLocalDateAsync(Guid userId)
-    {
-        var offsetMinutes = TimeZoneInfo.Local.GetUtcOffset(DateTime.UtcNow).TotalMinutes;
-
-        return await _db.TrainingEntries
-            .AsNoTracking()
-            .Where(e => e.UserId == userId && e.NumberOfRepetitions > 0)
-            .GroupBy(e => e.DateTime.AddMinutes(offsetMinutes).Date)
-            .Select(g => new DailyTotal(g.Key, g.Sum(e => e.NumberOfRepetitions)))
-            .ToListAsync();
-    }
-
     private async Task<(List<DateTime> streakDates, List<DailyTotal> entriesByLocalDate)> GetOrderedStreakDatesAsync(Guid userId)
     {
         // Check if there's an entry with 0 pushups for today, which would break the streak
@@ -92,18 +82,29 @@ public class TrainingEntryRepository : ITrainingEntryRepository
         var todayStartUtc = dateRange.start.ToUniversalTime();
         var todayEndUtc = dateRange.end.ToUniversalTime();
 
-        var todayEntry = await _db.TrainingEntries
+        var userEntries = await _db.TrainingEntries
             .AsNoTracking()
-            .FirstOrDefaultAsync(e => e.UserId == userId &&
-                                    e.DateTime >= todayStartUtc &&
-                                    e.DateTime < todayEndUtc);
+            .Where(e => e.UserId == userId)
+            .ToListAsync();
+
+        var todayEntry = userEntries.FirstOrDefault(e => e.DateTime >= todayStartUtc &&
+                                                          e.DateTime < todayEndUtc);
 
         if (todayEntry != null && todayEntry.NumberOfRepetitions == 0)
         {
             return (new List<DateTime>(), new List<DailyTotal>());
         }
 
-        var entriesByLocalDate = await GetEntriesByLocalDateAsync(userId);
+        var entriesByLocalDate = userEntries
+            .Where(e => e.NumberOfRepetitions > 0)
+            .Select(e => new
+            {
+                LocalDate = e.DateTime.ToLocalTime().Date,
+                e.NumberOfRepetitions
+            })
+            .GroupBy(e => e.LocalDate)
+            .Select(g => new DailyTotal(g.Key, g.Sum(e => e.NumberOfRepetitions)))
+            .ToList();
 
         if (!entriesByLocalDate.Any())
         {
@@ -116,7 +117,7 @@ public class TrainingEntryRepository : ITrainingEntryRepository
 
         var orderedDates = orderedEntries.Select(e => e.Date).ToList();
 
-        var userLocalToday = DateTime.Now.Date;
+        var userLocalToday = DateTimeOffset.Now.Date;
         var userLocalYesterday = userLocalToday.AddDays(-1);
 
         var latestEntryDate = orderedDates.First();
@@ -187,27 +188,18 @@ public class TrainingEntryRepository : ITrainingEntryRepository
     
     // Helper methods for time zone handling
     
-    private (DateTime start, DateTime end) GetUserLocalDateRange()
+    private (DateTimeOffset start, DateTimeOffset end) GetUserLocalDateRange()
     {
-        // Get the current user's local date 
-        var userLocalToday = DateTime.Now.Date;
-        
-        // Create date range from midnight to midnight (local time)
-        var todayStart = userLocalToday;
-        var todayEnd = userLocalToday.AddDays(1);
-        
+        // Get the current user's local date
+        var now = DateTimeOffset.Now;
+        var todayStart = new DateTimeOffset(now.Year, now.Month, now.Day, 0, 0, 0, now.Offset);
+        var todayEnd = todayStart.AddDays(1);
+
         return (todayStart, todayEnd);
     }
-    
-    private DateTime ToUserLocalTime(DateTime utcTime)
+
+    private DateTimeOffset ToUserLocalTime(DateTimeOffset utcTime)
     {
-        if (utcTime.Kind != DateTimeKind.Utc)
-        {
-            // If not UTC, convert to UTC first (safety check)
-            utcTime = DateTime.SpecifyKind(utcTime, DateTimeKind.Utc);
-        }
-        
-        // Convert UTC to local time
         return utcTime.ToLocalTime();
     }
 }
