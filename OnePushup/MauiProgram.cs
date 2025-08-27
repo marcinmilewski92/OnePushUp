@@ -3,6 +3,9 @@ using OnePushUp.Data;
 using OnePushUp.Repositories;
 using OnePushUp.Services;
 using Microsoft.EntityFrameworkCore;
+#if ANDROID
+using OnePushUp.Platforms.Android;
+#endif
 
 namespace OnePushUp;
 
@@ -25,6 +28,11 @@ public static class MauiProgram
         // Services
         builder.Services.AddTransient<TrainingService>();
         builder.Services.AddTransient<UserService>();
+#if ANDROID
+        builder.Services.AddSingleton<INotificationScheduler, AndroidNotificationScheduler>();
+#else
+        builder.Services.AddSingleton<INotificationScheduler, DefaultNotificationScheduler>();
+#endif
         builder.Services.AddTransient<NotificationService>();
         builder.Services.AddSingleton<DbInitializer>();
 
