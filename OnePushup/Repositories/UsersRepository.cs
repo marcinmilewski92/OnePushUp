@@ -24,15 +24,16 @@ public class UsersRepository : IUsersRepository
             .FirstOrDefaultAsync();
     }
 
-    public async Task UpdateAsync(User user)
+    public async Task<bool> UpdateAsync(User user)
     {
         var existingUser = await _db.Users.FindAsync(user.Id);
         if (existingUser is null)
         {
-            return;
+            return false;
         }
 
         existingUser.NickName = user.NickName;
         await _db.SaveChangesAsync();
+        return true;
     }
 }

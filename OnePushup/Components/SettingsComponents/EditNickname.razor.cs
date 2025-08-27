@@ -82,18 +82,25 @@ public partial class EditNickname
 
             // Log before updating
             Logger.LogInformation("Updating nickname from '{OldNickname}' to '{NewNickname}'", _currentUser.NickName, _nickname);
-            
+
             var userDto = new UserDto
             {
                 Id = _currentUser.Id,
                 NickName = _nickname
             };
-            
-            await UserService.UpdateUserAsync(userDto);
-            
+
+            var success = await UserService.UpdateUserAsync(userDto);
+            if (!success)
+            {
+                _isError = true;
+                _message = "Failed to update nickname: user not found.";
+                Logger.LogWarning("Failed to update nickname for user {UserId}: user not found", _currentUser.Id);
+                return;
+            }
+
             // Update the current user's nickname locally
             _currentUser.NickName = _nickname;
-            
+
             _message = "Nickname updated successfully!";
             Logger.LogInformation("Nickname updated successfully for user {UserId}", _currentUser.Id);
         }
