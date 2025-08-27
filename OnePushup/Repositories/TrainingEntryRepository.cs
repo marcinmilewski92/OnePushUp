@@ -77,35 +77,21 @@ public class TrainingEntryRepository : ITrainingEntryRepository
 
     private async Task<(List<DateTime> streakDates, List<DailyTotal> entriesByLocalDate)> GetOrderedStreakDatesAsync(Guid userId)
     {
-        // Check if there's an entry with 0 pushups for today, which would break the streak
         var dateRange = GetUserLocalDateRange();
         var todayStartUtc = dateRange.start.ToUniversalTime();
         var todayEndUtc = dateRange.end.ToUniversalTime();
 
-        var userEntries = await _db.TrainingEntries
+        var todayEntry = await _db.TrainingEntries
             .AsNoTracking()
-            .Where(e => e.UserId == userId)
-            .ToListAsync();
-
-        var todayEntry = userEntries.FirstOrDefault(e => e.DateTime >= todayStartUtc &&
-                                                          e.DateTime < todayEndUtc);
+            .Where(e => e.UserId == userId && e.DateTime >= todayStartUtc && e.DateTime < todayEndUtc)
+            .FirstOrDefaultAsync();
 
         if (todayEntry != null && todayEntry.NumberOfRepetitions == 0)
         {
             return (new List<DateTime>(), new List<DailyTotal>());
         }
 
-        var entriesByLocalDate = userEntries
-            .Where(e => e.NumberOfRepetitions > 0)
-            .Select(e => new
-            {
-                LocalDate = e.DateTime.ToLocalTime().Date,
-                e.NumberOfRepetitions
-            })
-            .GroupBy(e => e.LocalDate)
-            .Select(g => new DailyTotal(g.Key, g.Sum(e => e.NumberOfRepetitions)))
-            .ToList();
-
+        var entriesByLocalDate = await GetEntriesByLocalDateAsync(userId);
         if (!entriesByLocalDate.Any())
         {
             return (new List<DateTime>(), entriesByLocalDate);
@@ -178,28 +164,41 @@ public class TrainingEntryRepository : ITrainingEntryRepository
         {
             return false; // No entry found to delete
         }
-        
-        // Remove the entry
+
         _db.TrainingEntries.Remove(todayEntry);
         var result = await _db.SaveChangesAsync();
-        
+
         return result > 0;
     }
-    
+
+    private async Task<List<DailyTotal>> GetEntriesByLocalDateAsync(Guid userId)
+    {
+        var offset = TimeZoneInfo.Local.GetUtcOffset(DateTimeOffset.UtcNow);
+
+        var entries = await _db.TrainingEntries
+            .AsNoTracking()
+            .Where(e => e.UserId == userId && e.NumberOfRepetitions > 0)
+            .ToListAsync();
+
+        return entries
+            .Select(e => new
+            {
+                LocalDate = e.DateTime.ToOffset(offset).Date,
+                e.NumberOfRepetitions
+            })
+            .GroupBy(e => e.LocalDate)
+            .Select(g => new DailyTotal(g.Key, g.Sum(e => e.NumberOfRepetitions)))
+            .ToList();
+    }
+
     // Helper methods for time zone handling
-    
+
     private (DateTimeOffset start, DateTimeOffset end) GetUserLocalDateRange()
     {
-        // Get the current user's local date
         var now = DateTimeOffset.Now;
         var todayStart = new DateTimeOffset(now.Year, now.Month, now.Day, 0, 0, 0, now.Offset);
         var todayEnd = todayStart.AddDays(1);
 
         return (todayStart, todayEnd);
-    }
-
-    private DateTimeOffset ToUserLocalTime(DateTimeOffset utcTime)
-    {
-        return utcTime.ToLocalTime();
     }
 }
