@@ -81,17 +81,20 @@ public class TrainingEntryRepository : ITrainingEntryRepository
         var todayStartUtc = dateRange.start.ToUniversalTime();
         var todayEndUtc = dateRange.end.ToUniversalTime();
 
-        var todayEntry = await _db.TrainingEntries
+        var entries = await _db.TrainingEntries
             .AsNoTracking()
-            .Where(e => e.UserId == userId && e.DateTime >= todayStartUtc && e.DateTime < todayEndUtc)
-            .FirstOrDefaultAsync();
+            .Where(e => e.UserId == userId)
+            .ToListAsync();
+
+        var todayEntry = entries
+            .FirstOrDefault(e => e.DateTime >= todayStartUtc && e.DateTime < todayEndUtc);
 
         if (todayEntry != null && todayEntry.NumberOfRepetitions == 0)
         {
             return (new List<DateTime>(), new List<DailyTotal>());
         }
 
-        var entriesByLocalDate = await GetEntriesByLocalDateAsync(userId);
+        var entriesByLocalDate = GroupEntriesByLocalDate(entries);
         if (!entriesByLocalDate.Any())
         {
             return (new List<DateTime>(), entriesByLocalDate);
@@ -171,13 +174,12 @@ public class TrainingEntryRepository : ITrainingEntryRepository
         return result > 0;
     }
 
-    private async Task<List<DailyTotal>> GetEntriesByLocalDateAsync(Guid userId)
+    private static List<DailyTotal> GroupEntriesByLocalDate(IEnumerable<TrainingEntry> entries)
     {
         var offsetMinutes = TimeZoneInfo.Local.GetUtcOffset(DateTimeOffset.UtcNow).TotalMinutes;
 
-        return await _db.TrainingEntries
-            .AsNoTracking()
-            .Where(e => e.UserId == userId && e.NumberOfRepetitions > 0)
+        return entries
+            .Where(e => e.NumberOfRepetitions > 0)
             .Select(e => new
             {
                 LocalDate = e.DateTime.AddMinutes(offsetMinutes).Date,
@@ -185,7 +187,7 @@ public class TrainingEntryRepository : ITrainingEntryRepository
             })
             .GroupBy(e => e.LocalDate)
             .Select(g => new DailyTotal(g.Key, g.Sum(e => e.NumberOfRepetitions)))
-            .ToListAsync();
+            .ToList();
     }
 
     // Helper methods for time zone handling
