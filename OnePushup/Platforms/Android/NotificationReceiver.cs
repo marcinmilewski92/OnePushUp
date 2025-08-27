@@ -7,6 +7,7 @@ using Microsoft.Maui;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
+using OnePushUp.Services;
 using System;
 
 namespace OnePushUp.Platforms.Android;
@@ -303,7 +304,7 @@ public class NotificationReceiver : BroadcastReceiver
             if (timeTicks == 0)
             {
                 Logger.LogInformation("NotificationReceiver: No notification time stored, using default");
-                timeTicks = new TimeSpan(8, 0, 0).Ticks; // Default to 8:00 AM
+                timeTicks = NotificationService.DefaultNotificationTime.Ticks; // Default to 8:00 AM
             }
 
             var time = TimeSpan.FromTicks(timeTicks);
@@ -489,7 +490,7 @@ public class NotificationReceiver : BroadcastReceiver
             if (timeTicks == 0)
             {
                 Logger.LogInformation("NotificationReceiver: No notification time stored, using default");
-                timeTicks = new TimeSpan(8, 0, 0).Ticks; // Default to 8:00 AM
+                timeTicks = NotificationService.DefaultNotificationTime.Ticks; // Default to 8:00 AM
             }
 
             TimeSpan scheduledTime = TimeSpan.FromTicks(timeTicks);
