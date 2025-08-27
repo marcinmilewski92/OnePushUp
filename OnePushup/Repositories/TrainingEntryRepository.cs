@@ -20,14 +20,14 @@ public class TrainingEntryRepository : ITrainingEntryRepository
         // This ensures database consistency while respecting user's time zone
         if (entry.DateTime == default)
         {
-            entry.DateTime = DateTime.UtcNow;
+            entry.DateTime = DateTimeOffset.UtcNow;
         }
-        else if (entry.DateTime.Kind != DateTimeKind.Utc)
+        else if (entry.DateTime.Offset != TimeSpan.Zero)
         {
             // Convert to UTC if not already
             entry.DateTime = entry.DateTime.ToUniversalTime();
         }
-        
+
         var entryResult = await _db.TrainingEntries.AddAsync(entry);
         await _db.SaveChangesAsync();
         return entryResult.Entity.Id;
@@ -75,12 +75,12 @@ public class TrainingEntryRepository : ITrainingEntryRepository
 
     private async Task<List<DailyTotal>> GetEntriesByLocalDateAsync(Guid userId)
     {
-        var offsetMinutes = TimeZoneInfo.Local.GetUtcOffset(DateTime.UtcNow).TotalMinutes;
+        var offset = TimeZoneInfo.Local.GetUtcOffset(DateTimeOffset.UtcNow);
 
         return await _db.TrainingEntries
             .AsNoTracking()
             .Where(e => e.UserId == userId && e.NumberOfRepetitions > 0)
-            .GroupBy(e => e.DateTime.AddMinutes(offsetMinutes).Date)
+            .GroupBy(e => e.DateTime.ToOffset(offset).Date)
             .Select(g => new DailyTotal(g.Key, g.Sum(e => e.NumberOfRepetitions)))
             .ToListAsync();
     }
@@ -116,7 +116,7 @@ public class TrainingEntryRepository : ITrainingEntryRepository
 
         var orderedDates = orderedEntries.Select(e => e.Date).ToList();
 
-        var userLocalToday = DateTime.Now.Date;
+        var userLocalToday = DateTimeOffset.Now.Date;
         var userLocalYesterday = userLocalToday.AddDays(-1);
 
         var latestEntryDate = orderedDates.First();
@@ -187,27 +187,18 @@ public class TrainingEntryRepository : ITrainingEntryRepository
     
     // Helper methods for time zone handling
     
-    private (DateTime start, DateTime end) GetUserLocalDateRange()
+    private (DateTimeOffset start, DateTimeOffset end) GetUserLocalDateRange()
     {
-        // Get the current user's local date 
-        var userLocalToday = DateTime.Now.Date;
-        
-        // Create date range from midnight to midnight (local time)
-        var todayStart = userLocalToday;
-        var todayEnd = userLocalToday.AddDays(1);
-        
+        // Get the current user's local date
+        var now = DateTimeOffset.Now;
+        var todayStart = new DateTimeOffset(now.Year, now.Month, now.Day, 0, 0, 0, now.Offset);
+        var todayEnd = todayStart.AddDays(1);
+
         return (todayStart, todayEnd);
     }
-    
-    private DateTime ToUserLocalTime(DateTime utcTime)
+
+    private DateTimeOffset ToUserLocalTime(DateTimeOffset utcTime)
     {
-        if (utcTime.Kind != DateTimeKind.Utc)
-        {
-            // If not UTC, convert to UTC first (safety check)
-            utcTime = DateTime.SpecifyKind(utcTime, DateTimeKind.Utc);
-        }
-        
-        // Convert UTC to local time
         return utcTime.ToLocalTime();
     }
 }
