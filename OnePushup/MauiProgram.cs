@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using OnePushUp.Data;
 using OnePushUp.Repositories;
 using OnePushUp.Services;
