@@ -45,25 +45,24 @@ public class TrainingEntryRepository : ITrainingEntryRepository
         return result > 0;
     }
     
-    public async Task<bool> HasEntryForTodayAsync(Guid userId) =>
-        await GetEntryForTodayAsync(userId) is not null;
-    
+    public async Task<bool> HasEntryForTodayAsync(Guid userId)
+    {
+        var (start, end) = GetUserLocalDateRange();
+        var startUtc = start.ToUniversalTime();
+        var endUtc = end.ToUniversalTime();
+
+        return await _db.TrainingEntries.AsNoTracking()
+            .AnyAsync(e => e.UserId == userId && e.DateTime >= startUtc && e.DateTime < endUtc);
+    }
+
     public async Task<TrainingEntry?> GetEntryForTodayAsync(Guid userId)
     {
-        // Get the user's local date range for "today"
-        var userLocalToday = GetUserLocalDateRange();
-        
-        // Convert the local date range to UTC for database comparison
-        var todayStartUtc = userLocalToday.start.ToUniversalTime();
-        var todayEndUtc = userLocalToday.end.ToUniversalTime();
-        
-        var entries = await _db.TrainingEntries
-            .AsNoTracking()
-            .Where(e => e.UserId == userId)
-            .ToListAsync();
+        var (start, end) = GetUserLocalDateRange();
+        var startUtc = start.ToUniversalTime();
+        var endUtc = end.ToUniversalTime();
 
-        return entries.FirstOrDefault(e => e.DateTime >= todayStartUtc &&
-                                            e.DateTime < todayEndUtc);
+        return await _db.TrainingEntries.AsNoTracking()
+            .FirstOrDefaultAsync(e => e.UserId == userId && e.DateTime >= startUtc && e.DateTime < endUtc);
     }
     
     public async Task<List<TrainingEntry>> GetEntriesForUserAsync(Guid userId)
@@ -77,19 +76,16 @@ public class TrainingEntryRepository : ITrainingEntryRepository
 
     private async Task<List<DailyTotal>> GetEntriesByLocalDateAsync(Guid userId)
     {
-        var offsetMinutes = TimeZoneInfo.Local.GetUtcOffset(DateTimeOffset.UtcNow).TotalMinutes;
-
-        return await _db.TrainingEntries
+        var entries = await _db.TrainingEntries
             .AsNoTracking()
             .Where(e => e.UserId == userId && e.NumberOfRepetitions > 0)
-            .Select(e => new
-            {
-                LocalDate = e.DateTime.AddMinutes(offsetMinutes).Date,
-                e.NumberOfRepetitions
-            })
-            .GroupBy(e => e.LocalDate)
-            .Select(g => new DailyTotal(g.Key, g.Sum(e => e.NumberOfRepetitions)))
             .ToListAsync();
+
+        return entries
+            .GroupBy(e => e.DateTime.ToLocalTime().Date)
+            .Select(g => new DailyTotal(g.Key, g.Sum(e => e.NumberOfRepetitions)))
+            .OrderByDescending(dt => dt.Date)
+            .ToList();
     }
 
     private async Task<(List<DateTime> streakDates, List<DailyTotal> entriesByLocalDate)> GetOrderedStreakDatesAsync(Guid userId)
@@ -107,11 +103,7 @@ public class TrainingEntryRepository : ITrainingEntryRepository
             return (new List<DateTime>(), entriesByLocalDate);
         }
 
-        var orderedEntries = entriesByLocalDate
-            .OrderByDescending(e => e.Date)
-            .ToList();
-
-        var orderedDates = orderedEntries.Select(e => e.Date).ToList();
+        var orderedDates = entriesByLocalDate.Select(e => e.Date).ToList();
 
         var userLocalToday = DateTimeOffset.Now.Date;
         var userLocalYesterday = userLocalToday.AddDays(-1);
@@ -121,7 +113,7 @@ public class TrainingEntryRepository : ITrainingEntryRepository
 
         if (!isOngoingStreak)
         {
-            return (new List<DateTime>(), orderedEntries);
+            return (new List<DateTime>(), entriesByLocalDate);
         }
 
         var streak = 1;
@@ -142,7 +134,7 @@ public class TrainingEntryRepository : ITrainingEntryRepository
         }
 
         var streakDates = orderedDates.Take(streak).ToList();
-        return (streakDates, orderedEntries);
+        return (streakDates, entriesByLocalDate);
     }
     
     public async Task<int> GetCurrentStreakAsync(Guid userId)
@@ -168,7 +160,12 @@ public class TrainingEntryRepository : ITrainingEntryRepository
 
     public async Task<bool> DeleteEntryForTodayAsync(Guid userId)
     {
-        var todayEntry = await GetEntryForTodayAsync(userId);
+        var (start, end) = GetUserLocalDateRange();
+        var startUtc = start.ToUniversalTime();
+        var endUtc = end.ToUniversalTime();
+
+        var todayEntry = await _db.TrainingEntries
+            .FirstOrDefaultAsync(e => e.UserId == userId && e.DateTime >= startUtc && e.DateTime < endUtc);
 
         if (todayEntry == null)
         {
