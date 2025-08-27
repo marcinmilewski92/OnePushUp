@@ -173,22 +173,19 @@ public class TrainingEntryRepository : ITrainingEntryRepository
 
     private async Task<List<DailyTotal>> GetEntriesByLocalDateAsync(Guid userId)
     {
-        var offset = TimeZoneInfo.Local.GetUtcOffset(DateTimeOffset.UtcNow);
+        var offsetMinutes = TimeZoneInfo.Local.GetUtcOffset(DateTimeOffset.UtcNow).TotalMinutes;
 
-        var entries = await _db.TrainingEntries
+        return await _db.TrainingEntries
             .AsNoTracking()
             .Where(e => e.UserId == userId && e.NumberOfRepetitions > 0)
-            .ToListAsync();
-
-        return entries
             .Select(e => new
             {
-                LocalDate = e.DateTime.ToOffset(offset).Date,
+                LocalDate = e.DateTime.AddMinutes(offsetMinutes).Date,
                 e.NumberOfRepetitions
             })
             .GroupBy(e => e.LocalDate)
             .Select(g => new DailyTotal(g.Key, g.Sum(e => e.NumberOfRepetitions)))
-            .ToList();
+            .ToListAsync();
     }
 
     // Helper methods for time zone handling
