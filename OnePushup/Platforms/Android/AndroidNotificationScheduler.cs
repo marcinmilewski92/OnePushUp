@@ -165,7 +165,7 @@ public class AndroidNotificationScheduler : INotificationScheduler
         _logger.LogInformation($"Calendar time: {calendar.Time}");
         _logger.LogInformation($"Delay in ms: {delayMs}");
 
-        var exactIntent = new Intent(context, Java.Lang.Class.ForName("crc646e28dd9bd26e49b4.NotificationReceiver"));
+        var exactIntent = new Intent(context, Java.Lang.Class.FromType(typeof(NotificationReceiver)));
         exactIntent.SetAction(NotificationIntentConstants.ActionDailyNotification);
         exactIntent.PutExtra(NotificationIntentConstants.ExtraNotificationId, 1);
         exactIntent.PutExtra(NotificationIntentConstants.ExtraNotificationTime, $"{calendar.Time}");
@@ -177,7 +177,7 @@ public class AndroidNotificationScheduler : INotificationScheduler
             exactIntent,
             PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
 
-        var inexactIntent = new Intent(context, Java.Lang.Class.ForName("crc646e28dd9bd26e49b4.NotificationReceiver"));
+        var inexactIntent = new Intent(context, Java.Lang.Class.FromType(typeof(NotificationReceiver)));
         inexactIntent.SetAction(NotificationIntentConstants.ActionDailyNotification);
         inexactIntent.PutExtra(NotificationIntentConstants.ExtraNotificationId, 2);
         inexactIntent.PutExtra(NotificationIntentConstants.ExtraNotificationTime, $"{calendar.Time}");
@@ -189,7 +189,7 @@ public class AndroidNotificationScheduler : INotificationScheduler
             inexactIntent,
             PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
 
-        var repeatingIntent = new Intent(context, Java.Lang.Class.ForName("crc646e28dd9bd26e49b4.NotificationReceiver"));
+        var repeatingIntent = new Intent(context, Java.Lang.Class.FromType(typeof(NotificationReceiver)));
         repeatingIntent.SetAction(NotificationIntentConstants.ActionDailyNotification);
         repeatingIntent.PutExtra(NotificationIntentConstants.ExtraNotificationId, 3);
         repeatingIntent.PutExtra(NotificationIntentConstants.ExtraNotificationTime, $"{calendar.Time}");
@@ -404,7 +404,7 @@ public class AndroidNotificationScheduler : INotificationScheduler
 
             var windowTriggerAtMillis = calendar.TimeInMillis;
 
-            var intent = new Intent(context, Java.Lang.Class.ForName("crc646e28dd9bd26e49b4.NotificationReceiver"));
+            var intent = new Intent(context, Java.Lang.Class.FromType(typeof(NotificationReceiver)));
             intent.SetAction(NotificationIntentConstants.ActionDailyNotification);
             intent.PutExtra(NotificationIntentConstants.ExtraNotificationId, requestCode);
             intent.PutExtra(NotificationIntentConstants.ExtraWindowAlarm, true);
@@ -453,7 +453,7 @@ public class AndroidNotificationScheduler : INotificationScheduler
                 return Task.CompletedTask;
             }
 
-            var intent = new Intent(context, Java.Lang.Class.ForName("crc646e28dd9bd26e49b4.NotificationReceiver"));
+            var intent = new Intent(context, Java.Lang.Class.FromType(typeof(NotificationReceiver)));
             var pendingIntent = PendingIntent.GetBroadcast(
                 context,
                 1,
@@ -476,7 +476,7 @@ public class AndroidNotificationScheduler : INotificationScheduler
     {
         try
         {
-            var intent = new Intent(context, Java.Lang.Class.ForName("crc646e28dd9bd26e49b4.NotificationReceiver"));
+            var intent = new Intent(context, Java.Lang.Class.FromType(typeof(NotificationReceiver)));
             intent.SetAction(NotificationIntentConstants.ActionTestNotificationAlarm);
             intent.PutExtra(NotificationIntentConstants.ExtraNotificationId, 999);
             intent.PutExtra(NotificationIntentConstants.ExtraTestNotification, true);
