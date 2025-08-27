@@ -6,6 +6,8 @@ namespace OnePushUp.Repositories;
 public class TrainingEntryRepository : ITrainingEntryRepository
 {
     private readonly OnePushUpDbContext _db;
+
+    private readonly record struct DailyTotal(DateTime Date, int TotalReps);
     
     public TrainingEntryRepository(OnePushUpDbContext db)
     {
@@ -71,20 +73,19 @@ public class TrainingEntryRepository : ITrainingEntryRepository
             .ToListAsync();
     }
 
-    private async Task<Dictionary<DateTime, int>> GetEntriesByLocalDateAsync(Guid userId)
+    private async Task<List<DailyTotal>> GetEntriesByLocalDateAsync(Guid userId)
     {
-        var entries = await _db.TrainingEntries
+        var offsetMinutes = TimeZoneInfo.Local.GetUtcOffset(DateTime.UtcNow).TotalMinutes;
+
+        return await _db.TrainingEntries
             .AsNoTracking()
             .Where(e => e.UserId == userId && e.NumberOfRepetitions > 0)
-            .OrderByDescending(e => e.DateTime)
+            .GroupBy(e => e.DateTime.AddMinutes(offsetMinutes).Date)
+            .Select(g => new DailyTotal(g.Key, g.Sum(e => e.NumberOfRepetitions)))
             .ToListAsync();
-
-        return entries
-            .GroupBy(e => ToUserLocalTime(e.DateTime).Date)
-            .ToDictionary(g => g.Key, g => g.Sum(e => e.NumberOfRepetitions));
     }
 
-    private async Task<(List<DateTime> streakDates, Dictionary<DateTime, int> entriesByLocalDate)> GetOrderedStreakDatesAsync(Guid userId)
+    private async Task<(List<DateTime> streakDates, List<DailyTotal> entriesByLocalDate)> GetOrderedStreakDatesAsync(Guid userId)
     {
         // Check if there's an entry with 0 pushups for today, which would break the streak
         var dateRange = GetUserLocalDateRange();
@@ -99,7 +100,7 @@ public class TrainingEntryRepository : ITrainingEntryRepository
 
         if (todayEntry != null && todayEntry.NumberOfRepetitions == 0)
         {
-            return (new List<DateTime>(), new Dictionary<DateTime, int>());
+            return (new List<DateTime>(), new List<DailyTotal>());
         }
 
         var entriesByLocalDate = await GetEntriesByLocalDateAsync(userId);
@@ -109,9 +110,11 @@ public class TrainingEntryRepository : ITrainingEntryRepository
             return (new List<DateTime>(), entriesByLocalDate);
         }
 
-        var orderedDates = entriesByLocalDate.Keys
-            .OrderByDescending(d => d)
+        var orderedEntries = entriesByLocalDate
+            .OrderByDescending(e => e.Date)
             .ToList();
+
+        var orderedDates = orderedEntries.Select(e => e.Date).ToList();
 
         var userLocalToday = DateTime.Now.Date;
         var userLocalYesterday = userLocalToday.AddDays(-1);
@@ -121,7 +124,7 @@ public class TrainingEntryRepository : ITrainingEntryRepository
 
         if (!isOngoingStreak)
         {
-            return (new List<DateTime>(), entriesByLocalDate);
+            return (new List<DateTime>(), orderedEntries);
         }
 
         var streak = 1;
@@ -142,7 +145,7 @@ public class TrainingEntryRepository : ITrainingEntryRepository
         }
 
         var streakDates = orderedDates.Take(streak).ToList();
-        return (streakDates, entriesByLocalDate);
+        return (streakDates, orderedEntries);
     }
     
     public async Task<int> GetCurrentStreakAsync(Guid userId)
@@ -154,7 +157,8 @@ public class TrainingEntryRepository : ITrainingEntryRepository
     public async Task<int> GetTotalPushupsInCurrentStreakAsync(Guid userId)
     {
         var (streakDates, entriesByLocalDate) = await GetOrderedStreakDatesAsync(userId);
-        return streakDates.Sum(date => entriesByLocalDate.GetValueOrDefault(date, 0));
+        var lookup = entriesByLocalDate.ToDictionary(e => e.Date, e => e.TotalReps);
+        return streakDates.Sum(date => lookup.GetValueOrDefault(date, 0));
     }
     
     public async Task<int> GetTotalPushupsAsync(Guid userId)
