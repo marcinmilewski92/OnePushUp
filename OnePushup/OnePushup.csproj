@@ -24,21 +24,12 @@
         <ApplicationTitle>OnePushUp</ApplicationTitle>
 
         <!-- App Identifier -->
+        <ApplicationId>com.companyname.onepushup</ApplicationId>
 
-    </PropertyGroup>
-
-    <PropertyGroup Condition="$(TargetFramework.Contains('-android'))">
-        <!-- Stable, immutable app identifier for Google Play -->
-        <ApplicationId>com.softwarecowboys.onepushup</ApplicationId>
-
-        <!-- Human‑readable version (can include -beta) -->
-        <ApplicationDisplayVersion>0.1.0-beta</ApplicationDisplayVersion>
-
-        <!-- versionCode (must be >=1 and increase with every Play upload) -->
+        <!-- Versions -->
+        <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
         <ApplicationVersion>1</ApplicationVersion>
 
-        <!-- Google Play requires AAB -->
-        <AndroidPackageFormats>aab</AndroidPackageFormats>
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">14.2</SupportedOSPlatformVersion>
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">14.0</SupportedOSPlatformVersion>
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24.0</SupportedOSPlatformVersion>
@@ -64,9 +55,9 @@
         <!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
         <MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
         <ImageAsset Include="wwwroot\splash.svg">
-          <Color>#ffc009</Color>
-          <BaseSize>128,128</BaseSize>
-          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+            <Color>#ffc009</Color>
+            <BaseSize>128,128</BaseSize>
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </ImageAsset>
     </ItemGroup>
 
@@ -77,20 +68,20 @@
         <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.1" />
     </ItemGroup>
-    
+
     <ItemGroup>
-      <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.19">
-        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        <PrivateAssets>all</PrivateAssets>
-      </PackageReference>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.19">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\OnePushUp.Data\OnePushUp.Data.csproj" />
+        <ProjectReference Include="..\OnePushUp.Data\OnePushUp.Data.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Platforms\Android\Resources\" />
+        <Folder Include="Platforms\Android\Resources\" />
     </ItemGroup>
 
 </Project>
