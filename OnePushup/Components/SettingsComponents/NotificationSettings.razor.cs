@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
 using OnePushUp.Services;
+using System.Globalization;
 
 namespace OnePushUp.Components.SettingsComponents;
 
@@ -14,7 +15,8 @@ public partial class NotificationSettings
     
     private bool _isLoading = true;
     private bool _notificationsEnabled;
-    private TimeOnly _notificationTime = new(8, 0); // Default to 8:00 AM
+    // Bind to text to avoid culture/format issues with TimeOnly binding
+    private string _notificationTimeText = "08:00"; // 24h HH:mm
     private string _message = string.Empty;
     private bool _isError;
     
@@ -31,10 +33,15 @@ public partial class NotificationSettings
             
             var settings = await NotificationService.GetNotificationSettingsAsync();
             _notificationsEnabled = settings.Enabled;
-            
+
             if (settings.Time.HasValue)
             {
-                _notificationTime = new TimeOnly(settings.Time.Value.Hours, settings.Time.Value.Minutes);
+                var t = settings.Time.Value;
+                _notificationTimeText = t.ToString("hh\\:mm", System.Globalization.CultureInfo.InvariantCulture);
+            }
+            else
+            {
+                _notificationTimeText = "08:00";
             }
             
             _isLoading = false;
@@ -52,12 +59,34 @@ public partial class NotificationSettings
     {
         try
         {
-            await NotificationService.UpdateNotificationSettingsAsync(
-                new Models.NotificationSettings
+            TimeSpan? time = null;
+            if (_notificationsEnabled)
+            {
+                if (!TryParseNotificationTime(out var parsed))
                 {
-                    Enabled = _notificationsEnabled,
-                    Time = _notificationsEnabled ? new TimeSpan(_notificationTime.Hour, _notificationTime.Minute, 0) : null
-                });
+                    // Attempt to normalize common variants (e.g., HH:mm:ss)
+                    var normalized = (_notificationTimeText ?? string.Empty).Trim();
+                    if (normalized.Length >= 5)
+                    {
+                        normalized = normalized.Substring(0, 5);
+                        _notificationTimeText = normalized;
+                    }
+
+                    if (!TryParseNotificationTime(out parsed))
+                    {
+                        _isError = true;
+                        _message = "Invalid time format. Please use HH:mm (e.g., 08:00).";
+                        return;
+                    }
+                }
+                time = parsed;
+            }
+
+            await NotificationService.UpdateNotificationSettingsAsync(new Models.NotificationSettings
+            {
+                Enabled = _notificationsEnabled,
+                Time = time
+            });
                 
             _message = _notificationsEnabled 
                 ? "Notifications enabled successfully!" 
@@ -78,14 +107,20 @@ public partial class NotificationSettings
         
         try
         {
-            await NotificationService.UpdateNotificationSettingsAsync(
-                new Models.NotificationSettings
-                {
-                    Enabled = true,
-                    Time = new TimeSpan(_notificationTime.Hour, _notificationTime.Minute, 0)
-                });
-                
-            _message = $"Notification time updated to {_notificationTime.ToShortTimeString()}!";
+            if (!TryParseNotificationTime(out var parsed))
+            {
+                _isError = true;
+                _message = "Invalid time format. Please use HH:mm (e.g., 08:00).";
+                return;
+            }
+
+            await NotificationService.UpdateNotificationSettingsAsync(new Models.NotificationSettings
+            {
+                Enabled = true,
+                Time = parsed
+            });
+
+            _message = $"Notification time updated to {_notificationTimeText}!";
             _isError = false;
         }
         catch (Exception ex)
@@ -94,5 +129,44 @@ public partial class NotificationSettings
             _message = $"Error updating notification time: {ex.Message}";
             Logger.LogError(ex, "Error updating notification time");
         }
+    }
+
+    private async Task OnTimeInputChanged(ChangeEventArgs e)
+    {
+        _notificationTimeText = e.Value?.ToString() ?? string.Empty;
+        await UpdateNotificationTime();
+    }
+
+    private bool TryParseNotificationTime(out TimeSpan time)
+    {
+        // HTML input[type=time] is usually 24h HH:mm; some platforms provide HH:mm:ss
+        time = default;
+        var s = (_notificationTimeText ?? string.Empty).Trim();
+        if (string.IsNullOrEmpty(s)) return false;
+
+        // Accept seconds by truncation
+        if (s.Length >= 8 && s[2] == ':' && s[5] == ':')
+            s = s.Substring(0, 5);
+
+        // Try exact 24h first
+        if (TimeSpan.TryParseExact(s, new[] { "HH\\:mm", "H\\:mm" }, CultureInfo.InvariantCulture, out var ts))
+        {
+            time = ts;
+            // Normalize stored text to HH:mm
+            _notificationTimeText = ts.ToString("hh\\:mm", CultureInfo.InvariantCulture);
+            return true;
+        }
+
+        // Fallback: broader parse (invariant and current culture)
+        if (TimeSpan.TryParse(s, CultureInfo.InvariantCulture, out ts) || TimeSpan.TryParse(s, out ts))
+        {
+            // Ensure value within a day
+            if (ts < TimeSpan.Zero || ts >= TimeSpan.FromDays(1)) return false;
+            time = new TimeSpan(ts.Hours, ts.Minutes, 0);
+            _notificationTimeText = time.ToString("hh\\:mm", CultureInfo.InvariantCulture);
+            return true;
+        }
+
+        return false;
     }
 }

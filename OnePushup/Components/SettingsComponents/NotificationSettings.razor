@@ -12,8 +12,8 @@
         else
         {
             <div class="form-check form-switch mb-3">
-                <input class="form-check-input" type="checkbox" id="notificationsEnabled" 
-                       @bind="@_notificationsEnabled" />
+                <input class="form-check-input" type="checkbox" id="notificationsEnabled"
+                       @bind="@_notificationsEnabled" @bind:after="ToggleNotifications" />
                 <label class="form-check-label" for="notificationsEnabled">
                     Enable daily reminder notifications
                 </label>
@@ -23,10 +23,10 @@
             {
                 <div class="mb-3">
                     <label for="notificationTime" class="form-label">Reminder time</label>
-                    <input type="time" class="form-control" id="notificationTime" 
-                           @bind="@_notificationTime" @bind:after="UpdateNotificationTime" />
+                    <input type="time" class="form-control" id="notificationTime"
+                           step="60" value="@_notificationTimeText" @oninput="OnTimeInputChanged" />
                     <div class="form-text">
-                        You will receive a push notification at this time every day.
+                        Use 24-hour format HH:mm (e.g., 08:00). You will receive a notification at this time every day.
                     </div>
                 </div>
             }

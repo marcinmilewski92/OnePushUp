@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using System.Globalization;
 using OnePushUp.Models;
 using Preferences = Microsoft.Maui.Storage.Preferences;
 
@@ -58,7 +59,10 @@ public class NotificationService
             if (settings.Enabled && settings.Time.HasValue)
             {
                 await _scheduler.ScheduleAsync(settings.Time.Value);
-                _logger.LogInformation($"Notification settings updated - Enabled: {settings.Enabled}, Time: {settings.Time?.ToString(@"hh\\:mm")}");
+                var timeText = settings.Time.HasValue
+                    ? settings.Time.Value.ToString(@"hh\:mm", CultureInfo.InvariantCulture)
+                    : "None";
+                _logger.LogInformation("Notification settings updated - Enabled: {Enabled}, Time: {Time}", settings.Enabled, timeText);
             }
             else
             {
@@ -119,4 +123,3 @@ public class NotificationService
         await _scheduler.SendTestAsync();
     }
 }
-
