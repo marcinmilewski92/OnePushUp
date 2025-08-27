@@ -6,5 +6,5 @@ public interface IUsersRepository
 {
     Task<Guid> CreateAsync(User user);
     Task<User?> GetAsync();
-    Task UpdateAsync(User user);
+    Task<bool> UpdateAsync(User user);
 }
