@@ -5,6 +5,10 @@
              x:Class="OnePushUp.MainPage">
 
     <BlazorWebView x:Name="blazorWebView" HostPage="wwwroot/index.html">
+        <BlazorWebView.GestureRecognizers>
+            <SwipeGestureRecognizer Direction="Left" Swiped="OnSwipedLeft" />
+            <SwipeGestureRecognizer Direction="Right" Swiped="OnSwipedRight" />
+        </BlazorWebView.GestureRecognizers>
         <BlazorWebView.RootComponents>
             <RootComponent Selector="#app" ComponentType="{x:Type local:Components.Routes}" />
         </BlazorWebView.RootComponents>
