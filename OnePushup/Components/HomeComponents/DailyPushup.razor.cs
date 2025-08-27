@@ -66,19 +66,7 @@ public partial class DailyPushup
                 // Pre-set the form values based on today's entry
                 if (_lastEntry != null)
                 {
-                    if (_lastEntry.NumberOfRepetitions == 0)
-                    {
-                        _selectedOption = PushupOption.No;
-                    }
-                    else if (_lastEntry.NumberOfRepetitions == 1)
-                    {
-                        _selectedOption = PushupOption.Yes;
-                    }
-                    else
-                    {
-                        _selectedOption = PushupOption.YesMore;
-                        _repetitions = _lastEntry.NumberOfRepetitions;
-                    }
+                    SetSelectedOptionFromEntry(_lastEntry);
                 }
             }
         }
@@ -104,19 +92,24 @@ public partial class DailyPushup
         // Pre-set the form values based on the current entry
         if (_lastEntry != null)
         {
-            if (_lastEntry.NumberOfRepetitions == 0)
-            {
-                _selectedOption = PushupOption.No;
-            }
-            else if (_lastEntry.NumberOfRepetitions == 1)
-            {
-                _selectedOption = PushupOption.Yes;
-            }
-            else
-            {
-                _selectedOption = PushupOption.YesMore;
-                _repetitions = _lastEntry.NumberOfRepetitions;
-            }
+            SetSelectedOptionFromEntry(_lastEntry);
+        }
+    }
+
+    private void SetSelectedOptionFromEntry(TrainingEntryDto entry)
+    {
+        if (entry.NumberOfRepetitions == 0)
+        {
+            _selectedOption = PushupOption.No;
+        }
+        else if (entry.NumberOfRepetitions == 1)
+        {
+            _selectedOption = PushupOption.Yes;
+        }
+        else
+        {
+            _selectedOption = PushupOption.YesMore;
+            _repetitions = entry.NumberOfRepetitions;
         }
     }
     
