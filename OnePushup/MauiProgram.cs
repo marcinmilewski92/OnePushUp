@@ -3,6 +3,7 @@ using OnePushUp.Data;
 using OnePushUp.Repositories;
 using OnePushUp.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Maui.Storage;
 #if ANDROID
 using OnePushUp.Platforms.Android;
 #endif
@@ -21,7 +22,12 @@ public static class MauiProgram
         builder.Services.AddMauiBlazorWebView();
         
         // Database and repositories
-        builder.Services.AddDbContext<OnePushUpDbContext>();
+        // Explicitly configure SQLite provider and reliable app data path
+        builder.Services.AddDbContext<OnePushUpDbContext>(options =>
+        {
+            var dbPath = Path.Combine(FileSystem.AppDataDirectory, "OnePushUp.db");
+            options.UseSqlite($"Data Source={dbPath}");
+        });
         builder.Services.AddTransient<IUsersRepository, UsersRepository>();
         builder.Services.AddTransient<ITrainingEntryRepository, TrainingEntryRepository>();
         

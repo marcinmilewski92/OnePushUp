@@ -50,9 +50,14 @@ public class TrainingEntryRepository : ITrainingEntryRepository
         var (start, end) = GetUserLocalDateRange();
         var startUtc = start.ToUniversalTime();
         var endUtc = end.ToUniversalTime();
-        return await _db.TrainingEntries.AsNoTracking()
-            .Where(e => e.UserId == userId && e.DateTime >= startUtc && e.DateTime < endUtc)
-            .AnyAsync();
+
+        // Work around SQLite/DateTimeOffset translation limitations by filtering in memory
+        var entries = await _db.TrainingEntries.AsNoTracking()
+            .Where(e => e.UserId == userId)
+            .Select(e => new { e.DateTime })
+            .ToListAsync();
+
+        return entries.Any(e => e.DateTime >= startUtc && e.DateTime < endUtc);
     }
 
     public async Task<TrainingEntry?> GetEntryForTodayAsync(Guid userId)
@@ -60,10 +65,15 @@ public class TrainingEntryRepository : ITrainingEntryRepository
         var (start, end) = GetUserLocalDateRange();
         var startUtc = start.ToUniversalTime();
         var endUtc = end.ToUniversalTime();
-        return await _db.TrainingEntries.AsNoTracking()
-            .Where(e => e.UserId == userId && e.DateTime >= startUtc && e.DateTime < endUtc)
+
+        var entries = await _db.TrainingEntries.AsNoTracking()
+            .Where(e => e.UserId == userId)
+            .ToListAsync();
+
+        return entries
+            .Where(e => e.DateTime >= startUtc && e.DateTime < endUtc)
             .OrderByDescending(e => e.DateTime)
-            .FirstOrDefaultAsync();
+            .FirstOrDefault();
     }
     
     public async Task<List<TrainingEntry>> GetEntriesForUserAsync(Guid userId)
@@ -156,9 +166,12 @@ public class TrainingEntryRepository : ITrainingEntryRepository
         var startUtc = start.ToUniversalTime();
         var endUtc = end.ToUniversalTime();
 
-        var todayEntry = await _db.TrainingEntries
-            .Where(e => e.UserId == userId && e.DateTime >= startUtc && e.DateTime < endUtc)
-            .FirstOrDefaultAsync();
+        var candidates = await _db.TrainingEntries
+            .Where(e => e.UserId == userId)
+            .ToListAsync();
+
+        var todayEntry = candidates
+            .FirstOrDefault(e => e.DateTime >= startUtc && e.DateTime < endUtc);
 
         if (todayEntry == null)
         {
