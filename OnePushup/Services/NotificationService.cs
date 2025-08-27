@@ -19,36 +19,37 @@ public class NotificationService
     private const string EnabledKey = "notifications_enabled";
     private const string TimeKey = "notification_time";
     private const string LastScheduledKey = "last_notification_scheduled";
+    public static readonly TimeSpan DefaultNotificationTime = TimeSpan.FromHours(8);
 
     public NotificationService(ILogger<NotificationService> logger)
     {
         _logger = logger;
     }
 
-    public Task<NotificationSettings> GetNotificationSettingsAsync()
+    public async Task<NotificationSettings> GetNotificationSettingsAsync()
     {
         try
         {
             var enabled = Preferences.Default.Get(EnabledKey, false);
-            
+
             // Time is stored as ticks
             var timeTicks = Preferences.Default.Get(TimeKey, 0L);
-            TimeSpan? time = timeTicks > 0 ? TimeSpan.FromTicks(timeTicks) : new TimeSpan(8, 0, 0);
-            
-            return Task.FromResult(new NotificationSettings
+            TimeSpan? time = timeTicks > 0 ? TimeSpan.FromTicks(timeTicks) : DefaultNotificationTime;
+
+            return new NotificationSettings
             {
                 Enabled = enabled,
                 Time = time
-            });
+            };
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving notification settings");
-            return Task.FromResult(new NotificationSettings
+            return new NotificationSettings
             {
                 Enabled = false,
-                Time = new TimeSpan(8, 0, 0) // Default to 8:00 AM
-            });
+                Time = DefaultNotificationTime // Default to 8:00 AM
+            };
         }
     }
 
