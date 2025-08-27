@@ -165,10 +165,10 @@ public class AndroidNotificationScheduler : INotificationScheduler
         _logger.LogInformation($"Delay in ms: {delayMs}");
 
         var exactIntent = new Intent(context, Java.Lang.Class.FromType(typeof(NotificationReceiver)));
-        exactIntent.SetAction("com.onepushup.DAILY_NOTIFICATION");
-        exactIntent.PutExtra("notification_id", 1);
-        exactIntent.PutExtra("notification_time", $"{calendar.Time}");
-        exactIntent.PutExtra("approach", "exact");
+        exactIntent.SetAction(NotificationIntentConstants.ActionDailyNotification);
+        exactIntent.PutExtra(NotificationIntentConstants.ExtraNotificationId, 1);
+        exactIntent.PutExtra(NotificationIntentConstants.ExtraNotificationTime, $"{calendar.Time}");
+        exactIntent.PutExtra(NotificationIntentConstants.ExtraApproach, "exact");
 
         var exactPendingIntent = PendingIntent.GetBroadcast(
             context,
@@ -177,10 +177,10 @@ public class AndroidNotificationScheduler : INotificationScheduler
             PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
 
         var inexactIntent = new Intent(context, Java.Lang.Class.FromType(typeof(NotificationReceiver)));
-        inexactIntent.SetAction("com.onepushup.DAILY_NOTIFICATION");
-        inexactIntent.PutExtra("notification_id", 2);
-        inexactIntent.PutExtra("notification_time", $"{calendar.Time}");
-        inexactIntent.PutExtra("approach", "inexact");
+        inexactIntent.SetAction(NotificationIntentConstants.ActionDailyNotification);
+        inexactIntent.PutExtra(NotificationIntentConstants.ExtraNotificationId, 2);
+        inexactIntent.PutExtra(NotificationIntentConstants.ExtraNotificationTime, $"{calendar.Time}");
+        inexactIntent.PutExtra(NotificationIntentConstants.ExtraApproach, "inexact");
 
         var inexactPendingIntent = PendingIntent.GetBroadcast(
             context,
@@ -189,10 +189,10 @@ public class AndroidNotificationScheduler : INotificationScheduler
             PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
 
         var repeatingIntent = new Intent(context, Java.Lang.Class.FromType(typeof(NotificationReceiver)));
-        repeatingIntent.SetAction("com.onepushup.DAILY_NOTIFICATION");
-        repeatingIntent.PutExtra("notification_id", 3);
-        repeatingIntent.PutExtra("notification_time", $"{calendar.Time}");
-        repeatingIntent.PutExtra("approach", "repeating");
+        repeatingIntent.SetAction(NotificationIntentConstants.ActionDailyNotification);
+        repeatingIntent.PutExtra(NotificationIntentConstants.ExtraNotificationId, 3);
+        repeatingIntent.PutExtra(NotificationIntentConstants.ExtraNotificationTime, $"{calendar.Time}");
+        repeatingIntent.PutExtra(NotificationIntentConstants.ExtraApproach, "repeating");
 
         var repeatingPendingIntent = PendingIntent.GetBroadcast(
             context,
@@ -403,11 +403,11 @@ public class AndroidNotificationScheduler : INotificationScheduler
             var windowTriggerAtMillis = calendar.TimeInMillis;
 
             var intent = new Intent(context, Java.Lang.Class.FromType(typeof(NotificationReceiver)));
-            intent.SetAction("com.onepushup.DAILY_NOTIFICATION");
-            intent.PutExtra("notification_id", requestCode);
-            intent.PutExtra("window_alarm", true);
-            intent.PutExtra("minute_offset", minuteOffset);
-            intent.PutExtra("approach", $"window_{minuteOffset}");
+            intent.SetAction(NotificationIntentConstants.ActionDailyNotification);
+            intent.PutExtra(NotificationIntentConstants.ExtraNotificationId, requestCode);
+            intent.PutExtra(NotificationIntentConstants.ExtraWindowAlarm, true);
+            intent.PutExtra(NotificationIntentConstants.ExtraMinuteOffset, minuteOffset);
+            intent.PutExtra(NotificationIntentConstants.ExtraApproach, $"window_{minuteOffset}");
 
             var pendingIntent = PendingIntent.GetBroadcast(
                 context,
@@ -475,10 +475,10 @@ public class AndroidNotificationScheduler : INotificationScheduler
         try
         {
             var intent = new Intent(context, Java.Lang.Class.FromType(typeof(NotificationReceiver)));
-            intent.SetAction("TEST_NOTIFICATION_ALARM");
-            intent.PutExtra("notification_id", 999);
-            intent.PutExtra("test_notification", true);
-            intent.PutExtra("notification_time", $"{DateTime.Now.AddMilliseconds(delayMs):yyyy-MM-dd HH:mm:ss}");
+            intent.SetAction(NotificationIntentConstants.ActionTestNotificationAlarm);
+            intent.PutExtra(NotificationIntentConstants.ExtraNotificationId, 999);
+            intent.PutExtra(NotificationIntentConstants.ExtraTestNotification, true);
+            intent.PutExtra(NotificationIntentConstants.ExtraNotificationTime, $"{DateTime.Now.AddMilliseconds(delayMs):yyyy-MM-dd HH:mm:ss}");
 
             var pendingIntent = PendingIntent.GetBroadcast(
                 context,
