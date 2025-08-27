@@ -75,26 +75,33 @@ public class TrainingEntryRepository : ITrainingEntryRepository
             .ToListAsync();
     }
 
+    private async Task<List<DailyTotal>> GetEntriesByLocalDateAsync(Guid userId)
+    {
+        var offsetMinutes = TimeZoneInfo.Local.GetUtcOffset(DateTimeOffset.UtcNow).TotalMinutes;
+
+        return await _db.TrainingEntries
+            .AsNoTracking()
+            .Where(e => e.UserId == userId && e.NumberOfRepetitions > 0)
+            .Select(e => new
+            {
+                LocalDate = e.DateTime.AddMinutes(offsetMinutes).Date,
+                e.NumberOfRepetitions
+            })
+            .GroupBy(e => e.LocalDate)
+            .Select(g => new DailyTotal(g.Key, g.Sum(e => e.NumberOfRepetitions)))
+            .ToListAsync();
+    }
+
     private async Task<(List<DateTime> streakDates, List<DailyTotal> entriesByLocalDate)> GetOrderedStreakDatesAsync(Guid userId)
     {
-        var dateRange = GetUserLocalDateRange();
-        var todayStartUtc = dateRange.start.ToUniversalTime();
-        var todayEndUtc = dateRange.end.ToUniversalTime();
-
-        var entries = await _db.TrainingEntries
-            .AsNoTracking()
-            .Where(e => e.UserId == userId)
-            .ToListAsync();
-
-        var todayEntry = entries
-            .FirstOrDefault(e => e.DateTime >= todayStartUtc && e.DateTime < todayEndUtc);
+        var todayEntry = await GetEntryForTodayAsync(userId);
 
         if (todayEntry != null && todayEntry.NumberOfRepetitions == 0)
         {
             return (new List<DateTime>(), new List<DailyTotal>());
         }
 
-        var entriesByLocalDate = GroupEntriesByLocalDate(entries);
+        var entriesByLocalDate = await GetEntriesByLocalDateAsync(userId);
         if (!entriesByLocalDate.Any())
         {
             return (new List<DateTime>(), entriesByLocalDate);
@@ -172,22 +179,6 @@ public class TrainingEntryRepository : ITrainingEntryRepository
         var result = await _db.SaveChangesAsync();
 
         return result > 0;
-    }
-
-    private static List<DailyTotal> GroupEntriesByLocalDate(IEnumerable<TrainingEntry> entries)
-    {
-        var offsetMinutes = TimeZoneInfo.Local.GetUtcOffset(DateTimeOffset.UtcNow).TotalMinutes;
-
-        return entries
-            .Where(e => e.NumberOfRepetitions > 0)
-            .Select(e => new
-            {
-                LocalDate = e.DateTime.AddMinutes(offsetMinutes).Date,
-                e.NumberOfRepetitions
-            })
-            .GroupBy(e => e.LocalDate)
-            .Select(g => new DailyTotal(g.Key, g.Sum(e => e.NumberOfRepetitions)))
-            .ToList();
     }
 
     // Helper methods for time zone handling
