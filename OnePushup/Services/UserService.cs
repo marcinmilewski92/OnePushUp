@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using OnePushUp.Data;
 using OnePushUp.Models.Dtos;
 using OnePushUp.Repositories;
@@ -7,10 +8,12 @@ namespace OnePushUp.Services;
 public class UserService
 {
     private readonly IUsersRepository _usersRepository;
+    private readonly ILogger<UserService> _logger;
 
-    public UserService(IUsersRepository usersRepository)
+    public UserService(IUsersRepository usersRepository, ILogger<UserService> logger)
     {
         _usersRepository = usersRepository;
+        _logger = logger;
     }
 
     public Task<User?> GetCurrentUserAsync() => _usersRepository.GetAsync();
@@ -38,13 +41,22 @@ public class UserService
         return await _usersRepository.CreateAsync(user);
     }
 
-    public async Task UpdateUserAsync(UserDto userDto)
+    public async Task<bool> UpdateUserAsync(UserDto userDto)
     {
         var user = await _usersRepository.GetAsync();
-        if (user != null)
+        if (user == null)
         {
-            user.NickName = userDto.NickName;
-            await _usersRepository.UpdateAsync(user);
+            _logger.LogWarning("Failed to update user {UserId}: user not found", userDto.Id);
+            return false;
         }
+
+        user.NickName = userDto.NickName;
+        var success = await _usersRepository.UpdateAsync(user);
+        if (!success)
+        {
+            _logger.LogWarning("Failed to update user {UserId}: user not found", userDto.Id);
+        }
+
+        return success;
     }
 }
