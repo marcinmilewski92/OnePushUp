@@ -258,172 +258,172 @@ public class NotificationService
         };
 #endif
     }
+    private async Task<bool> EnsureNotificationPermissionAsync()
+    {
+        return await CheckAndRequestNotificationPermissionAsync();
+    }
+
+    private (AlarmManager? alarmManager, PendingIntent? exactPendingIntent, PendingIntent? inexactPendingIntent, PendingIntent? repeatingPendingIntent, long triggerAtMillis, long delayMs, bool canUseExactAlarms, string calendarTime) CreateAlarmIntents(Context context, TimeSpan time)
+    {
+        var alarmManager = context.GetSystemService(Context.AlarmService) as AlarmManager;
+        if (alarmManager == null)
+        {
+            _logger.LogError("Failed to get AlarmManager service");
+            return (null, null, null, null, 0, 0, false, string.Empty);
+        }
+
+        var calendar = Java.Util.Calendar.GetInstance(Java.Util.TimeZone.Default);
+        calendar.Set(Java.Util.CalendarField.HourOfDay, time.Hours);
+        calendar.Set(Java.Util.CalendarField.Minute, time.Minutes);
+        calendar.Set(Java.Util.CalendarField.Second, 0);
+        calendar.Set(Java.Util.CalendarField.Millisecond, 0);
+
+        var nowMillis = Java.Lang.JavaSystem.CurrentTimeMillis();
+        if (calendar.TimeInMillis <= nowMillis)
+        {
+            calendar.Add(Java.Util.CalendarField.DayOfYear, 1);
+        }
+
+        var triggerAtMillis = calendar.TimeInMillis;
+        var delayMs = triggerAtMillis - nowMillis;
+
+        _logger.LogInformation($"Calendar time: {calendar.Time}");
+        _logger.LogInformation($"Delay in ms: {delayMs}");
+
+        var exactIntent = new Intent(context, Java.Lang.Class.FromType(typeof(Platforms.Android.NotificationReceiver)));
+        exactIntent.SetAction("com.onepushup.DAILY_NOTIFICATION");
+        exactIntent.PutExtra("notification_id", 1);
+        exactIntent.PutExtra("notification_time", $"{calendar.Time}");
+        exactIntent.PutExtra("approach", "exact");
+
+        var exactPendingIntent = PendingIntent.GetBroadcast(
+            context,
+            1,
+            exactIntent,
+            PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
+
+        var inexactIntent = new Intent(context, Java.Lang.Class.FromType(typeof(Platforms.Android.NotificationReceiver)));
+        inexactIntent.SetAction("com.onepushup.DAILY_NOTIFICATION");
+        inexactIntent.PutExtra("notification_id", 2);
+        inexactIntent.PutExtra("notification_time", $"{calendar.Time}");
+        inexactIntent.PutExtra("approach", "inexact");
+
+        var inexactPendingIntent = PendingIntent.GetBroadcast(
+            context,
+            2,
+            inexactIntent,
+            PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
+
+        var repeatingIntent = new Intent(context, Java.Lang.Class.FromType(typeof(Platforms.Android.NotificationReceiver)));
+        repeatingIntent.SetAction("com.onepushup.DAILY_NOTIFICATION");
+        repeatingIntent.PutExtra("notification_id", 3);
+        repeatingIntent.PutExtra("notification_time", $"{calendar.Time}");
+        repeatingIntent.PutExtra("approach", "repeating");
+
+        var repeatingPendingIntent = PendingIntent.GetBroadcast(
+            context,
+            3,
+            repeatingIntent,
+            PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
+
+        bool canUseExactAlarms = true;
+        if (Build.VERSION.SdkInt >= BuildVersionCodes.S && !alarmManager.CanScheduleExactAlarms())
+        {
+            _logger.LogWarning("Cannot schedule exact alarms - permission not granted");
+            canUseExactAlarms = false;
+        }
+
+        return (alarmManager, exactPendingIntent, inexactPendingIntent, repeatingPendingIntent, triggerAtMillis, delayMs, canUseExactAlarms, calendar.Time.ToString());
+    }
+
+    private void SetupWindowAlarms(Context context, AlarmManager alarmManager, TimeSpan time)
+    {
+        SetWindowAlarm(context, alarmManager, time, -2, 101);
+        SetWindowAlarm(context, alarmManager, time, -1, 102);
+        SetWindowAlarm(context, alarmManager, time, 1, 103);
+        SetWindowAlarm(context, alarmManager, time, 2, 104);
+    }
 
     private async Task ScheduleAndroidNotificationAsync(TimeSpan time)
     {
         try
         {
-            // Check notification permission first
-            if (!await CheckAndRequestNotificationPermissionAsync())
+            if (!await EnsureNotificationPermissionAsync())
             {
                 _logger.LogWarning("Cannot schedule notification - permission denied");
                 return;
             }
-            
+
             var context = Android.App.Application.Context;
-            
-            // Cancel any existing notifications first
+
             await CancelAndroidNotificationsAsync();
-            
-            // Calculate when to send the notification
+
             var now = DateTime.Now;
             _logger.LogInformation($"Scheduling notification - Current time: {now:yyyy-MM-dd HH:mm:ss}");
             _logger.LogInformation($"Requested notification time: {time.Hours:D2}:{time.Minutes:D2}");
-            
-            // *** NEW APPROACH - Try MULTIPLE alarm methods simultaneously ***
-            
-            // 1. APPROACH 1: Use Calendar and exact alarm (as before but improved)
-            var calendar = Java.Util.Calendar.GetInstance(Java.Util.TimeZone.Default);
-            calendar.Set(Java.Util.CalendarField.HourOfDay, time.Hours);
-            calendar.Set(Java.Util.CalendarField.Minute, time.Minutes);
-            calendar.Set(Java.Util.CalendarField.Second, 0);
-            calendar.Set(Java.Util.CalendarField.Millisecond, 0);
-            
-            // If the time has already passed today, add one day
-            var nowMillis = Java.Lang.JavaSystem.CurrentTimeMillis();
-            if (calendar.TimeInMillis <= nowMillis) 
+
+            var alarmData = CreateAlarmIntents(context, time);
+            if (alarmData.alarmManager == null)
             {
-                calendar.Add(Java.Util.CalendarField.DayOfYear, 1);
-            }
-            
-            var triggerAtMillis = calendar.TimeInMillis;
-            var delayMs = triggerAtMillis - nowMillis;
-            
-            _logger.LogInformation($"Calendar time: {calendar.Time}");
-            _logger.LogInformation($"Delay in ms: {delayMs}");
-            
-            // 2. APPROACH 2: Use a time window with INEXACT alarms (more likely to trigger)
-            var alarmManager = context.GetSystemService(Context.AlarmService) as AlarmManager;
-            if (alarmManager == null)
-            {
-                _logger.LogError("Failed to get AlarmManager service");
                 return;
             }
-            
-            // Create multiple intents with different actions to avoid overwriting
-            
-            // Intent for approach 1 (exact alarm)
-            var exactIntent = new Intent(context, Java.Lang.Class.FromType(typeof(Platforms.Android.NotificationReceiver)));
-            exactIntent.SetAction("com.onepushup.DAILY_NOTIFICATION");
-            exactIntent.PutExtra("notification_id", 1);
-            exactIntent.PutExtra("notification_time", $"{calendar.Time}");
-            exactIntent.PutExtra("approach", "exact");
-            
-            var exactPendingIntent = PendingIntent.GetBroadcast(
-                context, 
-                1, 
-                exactIntent, 
-                PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
-            
-            // Intent for approach 2 (inexact alarm)
-            var inexactIntent = new Intent(context, Java.Lang.Class.FromType(typeof(Platforms.Android.NotificationReceiver)));
-            inexactIntent.SetAction("com.onepushup.DAILY_NOTIFICATION");
-            inexactIntent.PutExtra("notification_id", 2);
-            inexactIntent.PutExtra("notification_time", $"{calendar.Time}");
-            inexactIntent.PutExtra("approach", "inexact");
-            
-            var inexactPendingIntent = PendingIntent.GetBroadcast(
-                context, 
-                2, 
-                inexactIntent, 
-                PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
-            
-            // Intent for approach 3 (repeating alarm)
-            var repeatingIntent = new Intent(context, Java.Lang.Class.FromType(typeof(Platforms.Android.NotificationReceiver)));
-            repeatingIntent.SetAction("com.onepushup.DAILY_NOTIFICATION");
-            repeatingIntent.PutExtra("notification_id", 3);
-            repeatingIntent.PutExtra("notification_time", $"{calendar.Time}");
-            repeatingIntent.PutExtra("approach", "repeating");
-            
-            var repeatingPendingIntent = PendingIntent.GetBroadcast(
-                context, 
-                3, 
-                repeatingIntent, 
-                PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
-            
-            // Check if we can schedule exact alarms on newer Android versions
-            bool canUseExactAlarms = true;
-            if (Build.VERSION.SdkInt >= BuildVersionCodes.S && !alarmManager.CanScheduleExactAlarms())
-            {
-                _logger.LogWarning("Cannot schedule exact alarms - permission not granted");
-                canUseExactAlarms = false;
-            }
-            
-            // Set alarms based on capabilities
+
+            var alarmManager = alarmData.alarmManager;
+            var triggerAtMillis = alarmData.triggerAtMillis;
+            var delayMs = alarmData.delayMs;
+
             if (Build.VERSION.SdkInt >= BuildVersionCodes.M)
             {
-                // APPROACH 1: Set exact alarm if allowed
-                if (canUseExactAlarms)
+                if (alarmData.canUseExactAlarms)
                 {
                     alarmManager.SetExactAndAllowWhileIdle(
                         AlarmType.RtcWakeup,
                         triggerAtMillis,
-                        exactPendingIntent);
-                    
+                        alarmData.exactPendingIntent!);
+
                     _logger.LogInformation("Exact alarm set");
                 }
-                
-                // APPROACH 2: Set inexact alarm (always works, less precise but more reliable)
+
                 alarmManager.Set(
                     AlarmType.RtcWakeup,
                     triggerAtMillis,
-                    inexactPendingIntent);
-                
+                    alarmData.inexactPendingIntent!);
+
                 _logger.LogInformation("Inexact alarm set");
             }
             else
             {
-                // Older Android versions
-                if (canUseExactAlarms)
+                if (alarmData.canUseExactAlarms)
                 {
                     alarmManager.SetExact(
                         AlarmType.RtcWakeup,
                         triggerAtMillis,
-                        exactPendingIntent);
+                        alarmData.exactPendingIntent!);
                 }
-                
+
                 alarmManager.Set(
                     AlarmType.Rtc,
                     triggerAtMillis,
-                    inexactPendingIntent);
+                    alarmData.inexactPendingIntent!);
             }
-            
-            // APPROACH 3: Always set a repeating alarm as backup
+
             alarmManager.SetRepeating(
                 AlarmType.RtcWakeup,
                 triggerAtMillis,
                 AlarmManager.IntervalDay,
-                repeatingPendingIntent);
-            
+                alarmData.repeatingPendingIntent!);
+
             _logger.LogInformation("Repeating alarm set");
-            
-            // 3. APPROACH 4: Set multiple window alarms
-            // Set window alarms +/- 2 minutes to ensure a notification within a reasonable time window
-            SetWindowAlarm(context, alarmManager, time, -2, 101);
-            SetWindowAlarm(context, alarmManager, time, -1, 102);
-            SetWindowAlarm(context, alarmManager, time, 1, 103);
-            SetWindowAlarm(context, alarmManager, time, 2, 104);
-            
-            // Create a test notification to appear 10 seconds from now to ensure system is working
+
+            SetupWindowAlarms(context, alarmManager, time);
+
             SendTestNotificationDelayed(context, 10000);
-            
-            // Store the settings
+
             Preferences.Default.Set(LastScheduledKey, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-            Preferences.Default.Set("notification_target_time", calendar.Time.ToString());
-            
+            Preferences.Default.Set("notification_target_time", alarmData.calendarTime);
+
             _logger.LogInformation($"Multiple notification alarms scheduled for {time.Hours:D2}:{time.Minutes:D2}");
-            
-            // Also schedule a direct notification for debugging purposes
+
             ScheduleDirectNotification(context, delayMs);
         }
         catch (Exception ex)
