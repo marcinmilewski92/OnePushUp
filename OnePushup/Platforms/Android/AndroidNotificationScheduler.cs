@@ -1,12 +1,12 @@
 using Android.App;
 using Android.Content;
-using Android.Content.PM;
 using Android.OS;
 using AndroidX.Core.App;
 using Microsoft.Extensions.Logging;
-using Microsoft.Maui.ApplicationModel;
 using OnePushUp.Services;
 using Preferences = Microsoft.Maui.Storage.Preferences;
+// Fully qualify the Application references to resolve ambiguity
+using AndroidApp = Android.App.Application;
 
 namespace OnePushUp.Platforms.Android;
 
@@ -30,7 +30,7 @@ public class AndroidNotificationScheduler : INotificationScheduler
                 return;
             }
 
-            var context = Application.Context;
+            var context = AndroidApp.Context;
             var notificationManager = NotificationManager.FromContext(context);
 
             if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
@@ -58,7 +58,8 @@ public class AndroidNotificationScheduler : INotificationScheduler
                 notificationIntent,
                 PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
 
-            int iconId = Android.Resource.Drawable.IcDialogInfo;
+            // Use default system icon
+            int iconId = global::Android.Resource.Drawable.IcDialogInfo;
 
             var builder = new NotificationCompat.Builder(context, "pushup_reminders")
                 .SetContentTitle("OnePushUp Test")
@@ -164,7 +165,7 @@ public class AndroidNotificationScheduler : INotificationScheduler
         _logger.LogInformation($"Calendar time: {calendar.Time}");
         _logger.LogInformation($"Delay in ms: {delayMs}");
 
-        var exactIntent = new Intent(context, Java.Lang.Class.FromType(typeof(NotificationReceiver)));
+        var exactIntent = new Intent(context, Java.Lang.Class.ForName("crc646e28dd9bd26e49b4.NotificationReceiver"));
         exactIntent.SetAction(NotificationIntentConstants.ActionDailyNotification);
         exactIntent.PutExtra(NotificationIntentConstants.ExtraNotificationId, 1);
         exactIntent.PutExtra(NotificationIntentConstants.ExtraNotificationTime, $"{calendar.Time}");
@@ -176,7 +177,7 @@ public class AndroidNotificationScheduler : INotificationScheduler
             exactIntent,
             PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
 
-        var inexactIntent = new Intent(context, Java.Lang.Class.FromType(typeof(NotificationReceiver)));
+        var inexactIntent = new Intent(context, Java.Lang.Class.ForName("crc646e28dd9bd26e49b4.NotificationReceiver"));
         inexactIntent.SetAction(NotificationIntentConstants.ActionDailyNotification);
         inexactIntent.PutExtra(NotificationIntentConstants.ExtraNotificationId, 2);
         inexactIntent.PutExtra(NotificationIntentConstants.ExtraNotificationTime, $"{calendar.Time}");
@@ -188,7 +189,7 @@ public class AndroidNotificationScheduler : INotificationScheduler
             inexactIntent,
             PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
 
-        var repeatingIntent = new Intent(context, Java.Lang.Class.FromType(typeof(NotificationReceiver)));
+        var repeatingIntent = new Intent(context, Java.Lang.Class.ForName("crc646e28dd9bd26e49b4.NotificationReceiver"));
         repeatingIntent.SetAction(NotificationIntentConstants.ActionDailyNotification);
         repeatingIntent.PutExtra(NotificationIntentConstants.ExtraNotificationId, 3);
         repeatingIntent.PutExtra(NotificationIntentConstants.ExtraNotificationTime, $"{calendar.Time}");
@@ -228,7 +229,7 @@ public class AndroidNotificationScheduler : INotificationScheduler
                 return;
             }
 
-            var context = Application.Context;
+            var context = AndroidApp.Context;
 
             await CancelAndroidNotificationsAsync();
 
@@ -349,7 +350,8 @@ public class AndroidNotificationScheduler : INotificationScheduler
                             notificationIntent,
                             PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
 
-                        int iconId = Android.Resource.Drawable.IcDialogInfo;
+                        // Use default system icon
+                        int iconId = global::Android.Resource.Drawable.IcDialogInfo;
 
                         var builder = new NotificationCompat.Builder(context, "pushup_reminders")
                             .SetContentTitle("OnePushUp Reminder")
@@ -402,7 +404,7 @@ public class AndroidNotificationScheduler : INotificationScheduler
 
             var windowTriggerAtMillis = calendar.TimeInMillis;
 
-            var intent = new Intent(context, Java.Lang.Class.FromType(typeof(NotificationReceiver)));
+            var intent = new Intent(context, Java.Lang.Class.ForName("crc646e28dd9bd26e49b4.NotificationReceiver"));
             intent.SetAction(NotificationIntentConstants.ActionDailyNotification);
             intent.PutExtra(NotificationIntentConstants.ExtraNotificationId, requestCode);
             intent.PutExtra(NotificationIntentConstants.ExtraWindowAlarm, true);
@@ -442,7 +444,7 @@ public class AndroidNotificationScheduler : INotificationScheduler
     {
         try
         {
-            var context = Application.Context;
+            var context = AndroidApp.Context;
 
             var alarmManager = context.GetSystemService(Context.AlarmService) as AlarmManager;
             if (alarmManager == null)
@@ -451,7 +453,7 @@ public class AndroidNotificationScheduler : INotificationScheduler
                 return Task.CompletedTask;
             }
 
-            var intent = new Intent(context, Java.Lang.Class.FromType(typeof(NotificationReceiver)));
+            var intent = new Intent(context, Java.Lang.Class.ForName("crc646e28dd9bd26e49b4.NotificationReceiver"));
             var pendingIntent = PendingIntent.GetBroadcast(
                 context,
                 1,
@@ -474,7 +476,7 @@ public class AndroidNotificationScheduler : INotificationScheduler
     {
         try
         {
-            var intent = new Intent(context, Java.Lang.Class.FromType(typeof(NotificationReceiver)));
+            var intent = new Intent(context, Java.Lang.Class.ForName("crc646e28dd9bd26e49b4.NotificationReceiver"));
             intent.SetAction(NotificationIntentConstants.ActionTestNotificationAlarm);
             intent.PutExtra(NotificationIntentConstants.ExtraNotificationId, 999);
             intent.PutExtra(NotificationIntentConstants.ExtraTestNotification, true);
@@ -518,4 +520,3 @@ public class AndroidNotificationScheduler : INotificationScheduler
         }
     }
 }
-
