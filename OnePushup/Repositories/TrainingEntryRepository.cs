@@ -62,7 +62,9 @@ public class TrainingEntryRepository : ITrainingEntryRepository
         var endUtc = end.ToUniversalTime();
 
         return await _db.TrainingEntries.AsNoTracking()
-            .FirstOrDefaultAsync(e => e.UserId == userId && e.DateTime >= startUtc && e.DateTime < endUtc);
+            .Where(e => e.UserId == userId && e.DateTime >= startUtc && e.DateTime < endUtc)
+            .OrderByDescending(e => e.DateTime)
+            .FirstOrDefaultAsync();
     }
     
     public async Task<List<TrainingEntry>> GetEntriesForUserAsync(Guid userId)
@@ -76,6 +78,8 @@ public class TrainingEntryRepository : ITrainingEntryRepository
 
     private async Task<List<DailyTotal>> GetEntriesByLocalDateAsync(Guid userId)
     {
+        // Fetch entries into memory to handle time zone conversion without
+        // relying on provider-specific translations (e.g. AddMinutes).
         var entries = await _db.TrainingEntries
             .AsNoTracking()
             .Where(e => e.UserId == userId && e.NumberOfRepetitions > 0)
@@ -104,17 +108,6 @@ public class TrainingEntryRepository : ITrainingEntryRepository
         }
 
         var orderedDates = entriesByLocalDate.Select(e => e.Date).ToList();
-
-        var userLocalToday = DateTimeOffset.Now.Date;
-        var userLocalYesterday = userLocalToday.AddDays(-1);
-
-        var latestEntryDate = orderedDates.First();
-        bool isOngoingStreak = latestEntryDate >= userLocalYesterday;
-
-        if (!isOngoingStreak)
-        {
-            return (new List<DateTime>(), entriesByLocalDate);
-        }
 
         var streak = 1;
         for (int i = 0; i < orderedDates.Count - 1; i++)
