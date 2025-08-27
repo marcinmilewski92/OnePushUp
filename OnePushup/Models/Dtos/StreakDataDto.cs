@@ -9,20 +9,12 @@ public class StreakDataDto
     public int TotalPushups { get; set; }
     
     // Additional properties that might be useful for display
-    public string StreakMessage
+    public string StreakMessage => CurrentStreak switch
     {
-        get
-        {
-            if (CurrentStreak >= 30)
-                return "Legendary streak!";
-            if (CurrentStreak >= 14)
-                return "Amazing streak!";
-            if (CurrentStreak >= 7)
-                return "Great streak!";
-            if (CurrentStreak > 0)
-                return "Keep it up!";
-                
-            return "Start your streak today!";
-        }
-    }
+        >= 30 => "Legendary streak!",
+        >= 14 => "Amazing streak!",
+        >= 7 => "Great streak!",
+        > 0 => "Keep it up!",
+        _ => "Start your streak today!",
+    };
 }
