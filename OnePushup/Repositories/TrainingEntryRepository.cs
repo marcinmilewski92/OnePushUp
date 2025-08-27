@@ -80,7 +80,12 @@ public class TrainingEntryRepository : ITrainingEntryRepository
         return await _db.TrainingEntries
             .AsNoTracking()
             .Where(e => e.UserId == userId && e.NumberOfRepetitions > 0)
-            .GroupBy(e => e.DateTime.AddMinutes(offsetMinutes).Date)
+            .Select(e => new
+            {
+                LocalDate = e.DateTime.AddMinutes(offsetMinutes).Date,
+                e.NumberOfRepetitions
+            })
+            .GroupBy(e => e.LocalDate)
             .Select(g => new DailyTotal(g.Key, g.Sum(e => e.NumberOfRepetitions)))
             .ToListAsync();
     }
