@@ -57,11 +57,13 @@ public class TrainingEntryRepository : ITrainingEntryRepository
         var todayStartUtc = userLocalToday.start.ToUniversalTime();
         var todayEndUtc = userLocalToday.end.ToUniversalTime();
         
-        return await _db.TrainingEntries
+        var entries = await _db.TrainingEntries
             .AsNoTracking()
-            .FirstOrDefaultAsync(e => e.UserId == userId &&
-                                    e.DateTime >= todayStartUtc &&
-                                    e.DateTime < todayEndUtc);
+            .Where(e => e.UserId == userId)
+            .ToListAsync();
+
+        return entries.FirstOrDefault(e => e.DateTime >= todayStartUtc &&
+                                            e.DateTime < todayEndUtc);
     }
     
     public async Task<List<TrainingEntry>> GetEntriesForUserAsync(Guid userId)
@@ -92,16 +94,7 @@ public class TrainingEntryRepository : ITrainingEntryRepository
 
     private async Task<(List<DateTime> streakDates, List<DailyTotal> entriesByLocalDate)> GetOrderedStreakDatesAsync(Guid userId)
     {
-        // Check if there's an entry with 0 pushups for today, which would break the streak
-        var dateRange = GetUserLocalDateRange();
-        var todayStartUtc = dateRange.start.ToUniversalTime();
-        var todayEndUtc = dateRange.end.ToUniversalTime();
-
-        var todayEntry = await _db.TrainingEntries
-            .AsNoTracking()
-            .FirstOrDefaultAsync(e => e.UserId == userId &&
-                                    e.DateTime >= todayStartUtc &&
-                                    e.DateTime < todayEndUtc);
+        var todayEntry = await GetEntryForTodayAsync(userId);
 
         if (todayEntry != null && todayEntry.NumberOfRepetitions == 0)
         {
@@ -109,7 +102,6 @@ public class TrainingEntryRepository : ITrainingEntryRepository
         }
 
         var entriesByLocalDate = await GetEntriesByLocalDateAsync(userId);
-
         if (!entriesByLocalDate.Any())
         {
             return (new List<DateTime>(), entriesByLocalDate);
@@ -182,28 +174,21 @@ public class TrainingEntryRepository : ITrainingEntryRepository
         {
             return false; // No entry found to delete
         }
-        
-        // Remove the entry
+
         _db.TrainingEntries.Remove(todayEntry);
         var result = await _db.SaveChangesAsync();
-        
+
         return result > 0;
     }
-    
+
     // Helper methods for time zone handling
-    
+
     private (DateTimeOffset start, DateTimeOffset end) GetUserLocalDateRange()
     {
-        // Get the current user's local date
         var now = DateTimeOffset.Now;
         var todayStart = new DateTimeOffset(now.Year, now.Month, now.Day, 0, 0, 0, now.Offset);
         var todayEnd = todayStart.AddDays(1);
 
         return (todayStart, todayEnd);
-    }
-
-    private DateTimeOffset ToUserLocalTime(DateTimeOffset utcTime)
-    {
-        return utcTime.ToLocalTime();
     }
 }
