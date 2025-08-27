@@ -58,7 +58,7 @@ public class MainApplication : MauiApplication
                         
                         // Send a broadcast to restore notifications
                         Intent restoreIntent = new Intent(this, Java.Lang.Class.FromType(typeof(Platforms.Android.NotificationReceiver)));
-                        restoreIntent.SetAction("RESTORE_NOTIFICATIONS");
+                        restoreIntent.SetAction(Platforms.Android.NotificationIntentConstants.ActionRestoreNotifications);
                         SendBroadcast(restoreIntent);
                         
                         // Also try to schedule directly through the service for redundancy
@@ -102,7 +102,7 @@ public class MainApplication : MauiApplication
         try
         {
             Intent intent = new Intent(ApplicationContext, Java.Lang.Class.FromType(typeof(Platforms.Android.NotificationReceiver)));
-            intent.SetAction("RESTORE_NOTIFICATIONS");
+            intent.SetAction(Platforms.Android.NotificationIntentConstants.ActionRestoreNotifications);
             intent.PutExtra("source", "application_startup");
             SendBroadcast(intent);
             Logger.LogInformation("Sent restore notifications intent to receiver");
@@ -130,8 +130,8 @@ public class PackageReplacedReceiver : BroadcastReceiver
             Logger.LogInformation("App was updated, restoring notifications");
             
             // Send broadcast to our notification receiver
-            Intent notificationIntent = new Intent(context, Java.Lang.Class.FromType(typeof(Platforms.Android.NotificationReceiver)));
-            notificationIntent.SetAction("RESTORE_NOTIFICATIONS");
+                        Intent notificationIntent = new Intent(context, Java.Lang.Class.FromType(typeof(Platforms.Android.NotificationReceiver)));
+                        notificationIntent.SetAction(Platforms.Android.NotificationIntentConstants.ActionRestoreNotifications);
             notificationIntent.PutExtra("source", "package_replaced");
             context.SendBroadcast(notificationIntent);
         }
