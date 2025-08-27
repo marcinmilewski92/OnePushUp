@@ -17,7 +17,7 @@ public class TrainingService
     {
         var entry = new TrainingEntry
         {
-            DateTime = DateTime.UtcNow,
+            DateTime = DateTimeOffset.UtcNow,
             NumberOfRepetitions = repetitions,
             UserId = userId
         };
