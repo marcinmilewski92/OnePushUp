@@ -50,12 +50,9 @@ public class TrainingEntryRepository : ITrainingEntryRepository
         var (start, end) = GetUserLocalDateRange();
         var startUtc = start.ToUniversalTime();
         var endUtc = end.ToUniversalTime();
-        var entries = await _db.TrainingEntries.AsNoTracking()
-            .Where(e => e.UserId == userId)
-            .Select(e => e.DateTime)
-            .ToListAsync();
-
-        return entries.Any(date => date >= startUtc && date < endUtc);
+        return await _db.TrainingEntries.AsNoTracking()
+            .Where(e => e.UserId == userId && e.DateTime >= startUtc && e.DateTime < endUtc)
+            .AnyAsync();
     }
 
     public async Task<TrainingEntry?> GetEntryForTodayAsync(Guid userId)
@@ -63,14 +60,10 @@ public class TrainingEntryRepository : ITrainingEntryRepository
         var (start, end) = GetUserLocalDateRange();
         var startUtc = start.ToUniversalTime();
         var endUtc = end.ToUniversalTime();
-        var entries = await _db.TrainingEntries.AsNoTracking()
-            .Where(e => e.UserId == userId)
-            .ToListAsync();
-
-        return entries
-            .Where(e => e.DateTime >= startUtc && e.DateTime < endUtc)
+        return await _db.TrainingEntries.AsNoTracking()
+            .Where(e => e.UserId == userId && e.DateTime >= startUtc && e.DateTime < endUtc)
             .OrderByDescending(e => e.DateTime)
-            .FirstOrDefault();
+            .FirstOrDefaultAsync();
     }
     
     public async Task<List<TrainingEntry>> GetEntriesForUserAsync(Guid userId)
@@ -163,12 +156,9 @@ public class TrainingEntryRepository : ITrainingEntryRepository
         var startUtc = start.ToUniversalTime();
         var endUtc = end.ToUniversalTime();
 
-        var entries = await _db.TrainingEntries
-            .Where(e => e.UserId == userId)
-            .ToListAsync();
-
-        var todayEntry = entries
-            .FirstOrDefault(e => e.DateTime >= startUtc && e.DateTime < endUtc);
+        var todayEntry = await _db.TrainingEntries
+            .Where(e => e.UserId == userId && e.DateTime >= startUtc && e.DateTime < endUtc)
+            .FirstOrDefaultAsync();
 
         if (todayEntry == null)
         {

@@ -1,22 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application android:enableOnBackInvokedCallback="true" android:allowBackup="true" android:icon="@mipmap/appicon" android:roundIcon="@mipmap/appicon_round" android:supportsRtl="true">
-        <!-- Explicit registration of the notification receiver -->
-        <receiver android:name=".Platforms.Android.NotificationReceiver" 
-                  android:enabled="true" 
-                  android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
-                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
-                <action android:name="com.onepushup.DAILY_NOTIFICATION" />
-                <action android:name="DAILY_NOTIFICATION_EXACT" />
-                <action android:name="DAILY_NOTIFICATION_INEXACT" />
-                <action android:name="DAILY_NOTIFICATION_REPEAT" />
-                <action android:name="WINDOW_NOTIFICATION_ALARM" />
-                <action android:name="TEST_NOTIFICATION_ALARM" />
-            </intent-filter>
-        </receiver>
+        <!-- Receivers and intent filters are generated from attributes in code -->
     </application>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />

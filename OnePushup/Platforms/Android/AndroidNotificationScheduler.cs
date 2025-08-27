@@ -206,9 +206,29 @@ public class AndroidNotificationScheduler : INotificationScheduler
         {
             _logger.LogWarning("Cannot schedule exact alarms - permission not granted");
             canUseExactAlarms = false;
+            TryPromptExactAlarmSettings(context);
         }
 
         return (alarmManager, exactPendingIntent, inexactPendingIntent, repeatingPendingIntent, triggerAtMillis, delayMs, canUseExactAlarms, calendar.Time.ToString());
+    }
+
+    private void TryPromptExactAlarmSettings(Context context)
+    {
+        try
+        {
+            if (Build.VERSION.SdkInt >= BuildVersionCodes.S)
+            {
+                var intent = new Intent(global::Android.Provider.Settings.ActionRequestScheduleExactAlarm);
+                intent.SetData(global::Android.Net.Uri.Parse($"package:{context.PackageName}"));
+                intent.SetFlags(ActivityFlags.NewTask);
+                context.StartActivity(intent);
+                _logger.LogInformation("Opened exact alarm settings screen");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to open exact alarm settings");
+        }
     }
 
     private void SetupWindowAlarms(Context context, AlarmManager alarmManager, TimeSpan time)

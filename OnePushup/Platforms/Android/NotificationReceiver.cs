@@ -16,6 +16,7 @@ namespace OnePushUp.Platforms.Android;
 })]
 public class NotificationReceiver : BroadcastReceiver
 {
+    private const string LastFiredDateKey = "last_notification_fired_date"; // yyyy-MM-dd
     private ILogger<NotificationReceiver> Logger => _logger ??=
         MauiApplication.Current?.Services?.GetService<ILogger<NotificationReceiver>>()
         ?? NullLogger<NotificationReceiver>.Instance;
@@ -62,8 +63,24 @@ public class NotificationReceiver : BroadcastReceiver
                 action == "WINDOW_NOTIFICATION_ALARM" ||
                 action == NotificationIntentConstants.ActionTestNotificationAlarm)
             {
-                NotificationDisplayer?.ShowPushupNotification(context, intent);
-                AlarmScheduler?.RescheduleForTomorrow(context);
+                // Deduplicate: only show one real daily notification per local day
+                var todayKey = DateTime.Now.ToString("yyyy-MM-dd");
+                var lastFired = Microsoft.Maui.Storage.Preferences.Default.Get(LastFiredDateKey, string.Empty);
+
+                bool isTest = intent.GetBooleanExtra(NotificationIntentConstants.ExtraTestNotification, false);
+                if (!isTest && string.Equals(todayKey, lastFired, StringComparison.Ordinal))
+                {
+                    Logger.LogInformation("Skipping duplicate daily notification for today");
+                }
+                else
+                {
+                    NotificationDisplayer?.ShowPushupNotification(context, intent);
+                    if (!isTest)
+                    {
+                        Microsoft.Maui.Storage.Preferences.Default.Set(LastFiredDateKey, todayKey);
+                    }
+                    AlarmScheduler?.RescheduleForTomorrow(context);
+                }
             }
         }
         catch (Exception ex)

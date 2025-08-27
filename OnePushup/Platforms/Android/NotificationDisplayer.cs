@@ -44,7 +44,7 @@ public class NotificationDisplayer : INotificationDisplayer
                 _logger.LogInformation("Notification channel created");
             }
 
-            var notificationIntent = new Intent(context, Java.Lang.Class.ForName("onepushup.MainActivity"));
+            var notificationIntent = new Intent(context, Java.Lang.Class.FromType(typeof(OnePushUp.MainActivity)));
             notificationIntent.SetFlags(ActivityFlags.ClearTop | ActivityFlags.SingleTop | ActivityFlags.NewTask);
             notificationIntent.SetAction(Intent.ActionMain);
             notificationIntent.AddCategory(Intent.CategoryLauncher);
@@ -130,7 +130,7 @@ public class NotificationDisplayer : INotificationDisplayer
                 notificationManager.CreateNotificationChannel(channel);
             }
 
-            var notificationIntent = new Intent(context, Java.Lang.Class.ForName("onepushup.MainActivity"));
+            var notificationIntent = new Intent(context, Java.Lang.Class.FromType(typeof(OnePushUp.MainActivity)));
             notificationIntent.SetFlags(ActivityFlags.ClearTop | ActivityFlags.SingleTop | ActivityFlags.NewTask);
             notificationIntent.SetAction(Intent.ActionMain);
             notificationIntent.AddCategory(Intent.CategoryLauncher);
