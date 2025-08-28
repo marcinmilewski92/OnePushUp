@@ -34,7 +34,13 @@ public static class MauiProgram
         builder.Services.AddSingleton<IActivityContent, ReadingContent>();
         builder.Services.AddSingleton<IActivityBranding, ReadingBranding>();
         builder.Services.AddTransient<UserService>();
+        #if ANDROID
+        builder.Services.AddSingleton<INotificationScheduler, AndroidNotificationScheduler>();
+        builder.Services.AddSingleton<IAlarmScheduler, AlarmScheduler>();
+        builder.Services.AddSingleton<INotificationDisplayer, NotificationDisplayer>();
+        #else
         builder.Services.AddSingleton<INotificationScheduler, DefaultNotificationScheduler>();
+        #endif
         builder.Services.AddTransient<NotificationService>();
         builder.Services.AddSingleton<DbInitializer>();
 

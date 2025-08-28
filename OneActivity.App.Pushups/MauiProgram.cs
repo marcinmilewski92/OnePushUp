@@ -9,7 +9,7 @@ using OneActivity.App.Pushups.Flavors.Pushups;
 using OneActivity.App.Pushups.Platforms.Android;
 #endif
 #if IOS || MACCATALYST
-using OneActivity.App.Pushups.Platforms.Apple;
+// Apple scheduler available if added; default scheduler otherwise
 #endif
 
 namespace OneActivity.App.Pushups;
@@ -41,8 +41,6 @@ public static class MauiProgram
         builder.Services.AddSingleton<INotificationScheduler, AndroidNotificationScheduler>();
         builder.Services.AddSingleton<IAlarmScheduler, AlarmScheduler>();
         builder.Services.AddSingleton<INotificationDisplayer, NotificationDisplayer>();
-#elif IOS || MACCATALYST
-        builder.Services.AddSingleton<INotificationScheduler, AppleNotificationScheduler>();
 #else
         builder.Services.AddSingleton<INotificationScheduler, DefaultNotificationScheduler>();
 #endif
@@ -65,4 +63,3 @@ public static class MauiProgram
         return app;
     }
 }
-

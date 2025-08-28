@@ -3,8 +3,13 @@
 <style>
 :root {
   --brand-primary: @((!string.IsNullOrWhiteSpace(Branding.PrimaryColor) ? Branding.PrimaryColor : "#9b0000"));
+  --brand-secondary: @((!string.IsNullOrWhiteSpace(Branding.SecondaryColor) ? Branding.SecondaryColor : "#7a2e00"));
   --brand-accent: @((!string.IsNullOrWhiteSpace(Branding.AccentColor) ? Branding.AccentColor : "#cc5500"));
-  /* Optional overrides; fallbacks used in CSS if not set */
+  --brand-text: #ffffff;
+  --brand-text-on-primary: #ffffff;
+  --card-color: #ffeedd;
+  --nav-btn-bg: rgba(255, 255, 255, 0.2);
+  --nav-btn-border: rgba(255, 255, 255, 0.4);
+  --nav-btn-text: #ffffff;
 }
 </style>
-
