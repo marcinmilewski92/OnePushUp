@@ -8,20 +8,24 @@ namespace OnePushUp.Platforms.Android;
 
 public interface INotificationDisplayer
 {
-    void ShowPushupNotification(Context context, Intent intent);
+    void ShowActivityNotification(Context context, Intent intent);
     void ShowTestNotification(Context context, Intent intent);
 }
 
 public class NotificationDisplayer : INotificationDisplayer
 {
     private readonly ILogger<NotificationDisplayer> _logger;
+    private readonly OnePushUp.Services.IActivityContent _content;
 
-    public NotificationDisplayer(ILogger<NotificationDisplayer> logger)
+    public const string ChannelId = "activity_reminders";
+
+    public NotificationDisplayer(ILogger<NotificationDisplayer> logger, OnePushUp.Services.IActivityContent content)
     {
         _logger = logger;
+        _content = content;
     }
 
-    public void ShowPushupNotification(Context context, Intent intent)
+    public void ShowActivityNotification(Context context, Intent intent)
     {
         try
         {
@@ -30,11 +34,11 @@ public class NotificationDisplayer : INotificationDisplayer
             if (global::Android.OS.Build.VERSION.SdkInt >= global::Android.OS.BuildVersionCodes.O)
             {
                 var channel = new NotificationChannel(
-                    "pushup_reminders",
-                    "Pushup Reminders",
+                    ChannelId,
+                    $"{_content.AppName} Reminders",
                     NotificationImportance.High)
                 {
-                    Description = "Daily reminders to do your pushups",
+                    Description = $"Daily reminders to {_content.Verb} your {_content.UnitPlural}",
                     LockscreenVisibility = NotificationVisibility.Public
                 };
 
@@ -80,9 +84,9 @@ public class NotificationDisplayer : INotificationDisplayer
 
             string approach = intent.GetStringExtra(NotificationIntentConstants.ExtraApproach) ?? "default";
 
-            var builder = new NotificationCompat.Builder(context, "pushup_reminders")
-                .SetContentTitle("OnePushUp Reminder")
-                .SetContentText($"Time to do your daily pushup! ({approach})")
+            var builder = new NotificationCompat.Builder(context, ChannelId)
+                .SetContentTitle($"{_content.AppName} Reminder")
+                .SetContentText($"Time to {_content.Verb} your daily {_content.UnitSingular}! ({approach})")
                 .SetSmallIcon(iconId)
                 .SetContentIntent(pendingIntent)
                 .SetAutoCancel(true)
@@ -99,7 +103,7 @@ public class NotificationDisplayer : INotificationDisplayer
             int notificationId = intent.GetIntExtra(NotificationIntentConstants.ExtraNotificationId, 1);
             notificationManager.Notify(notificationId, builder.Build());
 
-            _logger.LogInformation("Pushup notification displayed with ID {NotificationId} at {Time}", notificationId, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            _logger.LogInformation("Activity notification displayed with ID {NotificationId} at {Time}", notificationId, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
 
             WakeDeviceScreen(context);
         }
@@ -118,11 +122,11 @@ public class NotificationDisplayer : INotificationDisplayer
             if (global::Android.OS.Build.VERSION.SdkInt >= global::Android.OS.BuildVersionCodes.O)
             {
                 var channel = new NotificationChannel(
-                    "pushup_reminders",
-                    "Pushup Reminders",
+                    ChannelId,
+                    $"{_content.AppName} Reminders",
                     NotificationImportance.High)
                 {
-                    Description = "Daily reminders to do your pushups",
+                    Description = $"Daily reminders to {_content.Verb} your {_content.UnitPlural}",
                     LockscreenVisibility = NotificationVisibility.Public
                 };
 
@@ -143,8 +147,8 @@ public class NotificationDisplayer : INotificationDisplayer
 
             int iconId = global::Android.Resource.Drawable.IcDialogInfo;
 
-            var builder = new NotificationCompat.Builder(context, "pushup_reminders")
-                .SetContentTitle("OnePushUp Test")
+            var builder = new NotificationCompat.Builder(context, ChannelId)
+                .SetContentTitle($"{_content.AppName} Test")
                 .SetContentText($"Notification system is working! Current time: {DateTime.Now:HH:mm:ss}")
                 .SetSmallIcon(iconId)
                 .SetContentIntent(pendingIntent)

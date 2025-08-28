@@ -9,7 +9,7 @@ namespace OnePushUp.Components.HomeComponents;
 public partial class Streak
 {
     [Inject]
-    private TrainingService TrainingService { get; set; } = default!;
+    private ActivityService ActivityService { get; set; } = default!;
 
     [Inject]
     private ILogger<Streak> Logger { get; set; } = default!;
@@ -41,7 +41,7 @@ public partial class Streak
             
             if (CurrentUser != null && CurrentUser.Id != Guid.Empty)
             {
-                _streakData = await TrainingService.GetStreakDataAsync(CurrentUser.Id);
+                _streakData = await ActivityService.GetStreakDataAsync(CurrentUser.Id);
                 await OnDataLoaded.InvokeAsync();
             }
         }

@@ -1,0 +1,46 @@
+@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Routing
+@implements IDisposable
+
+<BrandingStyles />
+
+<div class="page">
+    <div class="topbar">
+        <div class="topbar-content">
+            <div class="brand-with-logo">
+                <img src="@Branding.SplashPath" width="60" height="60" alt="App Logo" />
+                <span class="brand-text">@Branding.AppDisplayName</span>
+            </div>
+            <div class="content-section">
+                <div class="nav-links-container">
+                    <NavLink href="/" class="btn btn-sm btn-autumn-nav me-2" Match="NavLinkMatch.All">
+                        <i class="bi bi-calendar-check"></i> Daily Goal
+                    </NavLink>
+                    <NavLink href="/stats" class="btn btn-sm btn-autumn-nav me-2">
+                        <i class="bi bi-graph-up"></i> Stats
+                    </NavLink>
+                    <NavLink href="/settings" class="btn btn-sm btn-autumn-nav">
+                        <i class="bi bi-gear"></i> Settings
+                    </NavLink>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <main>
+        <div class="content-header">
+            <div class="d-flex justify-content-between align-items-center w-100">
+                <div>
+                    <h4 class="mb-0">@GetPageTitle()</h4>
+                </div>
+                <div class="small text-muted">
+                    Current Time: @_currentTime.ToString("HH:mm:ss")
+                </div>
+            </div>
+        </div>
+
+        <article class="content">
+            @Body
+        </article>
+    </main>
+</div>

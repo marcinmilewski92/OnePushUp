@@ -1,0 +1,14 @@
+@page "/stats"
+@using OnePushUp.Components.HomeComponents
+
+@if (CurrentUser == null)
+{
+    <div class="alert alert-info">
+        Please create a user profile first.
+    </div>
+}
+else
+{
+    <Streak @ref="_streakComponent" CurrentUser="CurrentUser" OnDataLoaded="HandleStreakDataLoaded" />
+}
+

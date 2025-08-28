@@ -17,7 +17,7 @@ namespace OnePushUp.Data.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.19");
 
-            modelBuilder.Entity("OnePushUp.Data.TrainingEntry", b =>
+            modelBuilder.Entity("OnePushUp.Data.ActivityEntry", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -26,7 +26,7 @@ namespace OnePushUp.Data.Migrations
                     b.Property<DateTimeOffset>("DateTime")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("NumberOfRepetitions")
+                    b.Property<int>("Quantity")
                         .HasColumnType("INTEGER");
 
                     b.Property<Guid>("UserId")
@@ -36,7 +36,7 @@ namespace OnePushUp.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("TrainingEntries");
+                    b.ToTable("ActivityEntries");
                 });
 
             modelBuilder.Entity("OnePushUp.Data.User", b =>
@@ -54,10 +54,10 @@ namespace OnePushUp.Data.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("OnePushUp.Data.TrainingEntry", b =>
+            modelBuilder.Entity("OnePushUp.Data.ActivityEntry", b =>
                 {
                     b.HasOne("OnePushUp.Data.User", "User")
-                        .WithMany("TrainingEntries")
+                        .WithMany("ActivityEntries")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -67,7 +67,7 @@ namespace OnePushUp.Data.Migrations
 
             modelBuilder.Entity("OnePushUp.Data.User", b =>
                 {
-                    b.Navigation("TrainingEntries");
+                    b.Navigation("ActivityEntries");
                 });
 #pragma warning restore 612, 618
         }

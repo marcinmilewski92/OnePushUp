@@ -1,0 +1,10 @@
+@inject OnePushUp.Services.IActivityBranding Branding
+
+<style>
+:root {
+  --brand-primary: @((!string.IsNullOrWhiteSpace(Branding.PrimaryColor) ? Branding.PrimaryColor : "#9b0000"));
+  --brand-accent: @((!string.IsNullOrWhiteSpace(Branding.AccentColor) ? Branding.AccentColor : "#cc5500"));
+  /* Optional overrides; fallbacks used in CSS if not set */
+}
+</style>
+

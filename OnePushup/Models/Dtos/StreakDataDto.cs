@@ -5,8 +5,8 @@ namespace OnePushUp.Models.Dtos;
 public class StreakDataDto
 {
     public int CurrentStreak { get; set; }
-    public int PushupsInCurrentStreak { get; set; }
-    public int TotalPushups { get; set; }
+    public int QuantityInCurrentStreak { get; set; }
+    public int TotalQuantity { get; set; }
     
     // Additional properties that might be useful for display
     public string StreakMessage => CurrentStreak switch

@@ -29,10 +29,22 @@ public static class MauiProgram
             options.UseSqlite($"Data Source={dbPath}");
         });
         builder.Services.AddTransient<IUsersRepository, UsersRepository>();
-        builder.Services.AddTransient<ITrainingEntryRepository, TrainingEntryRepository>();
+        builder.Services.AddTransient<IActivityEntryRepository, ActivityEntryRepository>();
         
         // Services
-        builder.Services.AddTransient<TrainingService>();
+        builder.Services.AddTransient<ActivityService>();
+        // Flavor/content & branding selection via env var ONEAPP_FLAVOR (e.g., "reading"). Defaults to pushups.
+        var flavor = Environment.GetEnvironmentVariable("ONEAPP_FLAVOR")?.ToLowerInvariant();
+        if (flavor == "reading")
+        {
+            builder.Services.AddSingleton<IActivityContent, ReadingContent>();
+            builder.Services.AddSingleton<IActivityBranding, ReadingBranding>();
+        }
+        else
+        {
+            builder.Services.AddSingleton<IActivityContent, PushupContent>();
+            builder.Services.AddSingleton<IActivityBranding, PushupBranding>();
+        }
         builder.Services.AddTransient<UserService>();
 #if ANDROID
         builder.Services.AddSingleton<INotificationScheduler, AndroidNotificationScheduler>();

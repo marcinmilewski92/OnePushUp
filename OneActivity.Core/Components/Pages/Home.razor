@@ -1,0 +1,12 @@
+@page "/"
+@using OnePushUp.Components.HomeComponents
+
+@if (CurrentUser == null)
+{
+    <CreateUser OnUserCreated="HandleUserCreated" />
+}
+else
+{
+    <DailyActivity CurrentUser="CurrentUser" OnEntryAdded="HandleEntryAdded" />
+}
+

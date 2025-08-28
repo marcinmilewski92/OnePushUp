@@ -1,0 +1,150 @@
+<div class="card mt-4">
+    <div class="card-header">
+        <h3>@Content.DailyTitle</h3>
+    </div>
+    <div class="card-body">
+        @if (_isLoading)
+        {
+            <p>Loading...</p>
+        }
+        else if (_hasCompletedToday && !_isEditing)
+        {
+            <div class="alert @(_lastEntry != null && _lastEntry.Quantity > 0 ? "alert-success" : "alert-warning")">
+                @if (_lastEntry != null && _lastEntry.Quantity > 0)
+                {
+                    <h4>@Content.AlreadyCompletedTitle</h4>
+                    <p>@(Content.AlreadyCompletedMessage(_lastEntry!.Quantity))</p>
+                }
+                else
+                {
+                    <h4>@Content.RecordedZeroTitle</h4>
+                    <p>@Content.RecordedZeroMessage</p>
+                }
+                
+                <div class="mt-2">
+                    <button class="btn btn-outline-success" style="color: #2E8B57; border-color: #2E8B57;" @onclick="EnableEditMode">
+                        <i class="bi bi-pencil"></i> Edit Today's Entry
+                    </button>
+                </div>
+            </div>
+        }
+        else if (_isEditing)
+        {
+            <h4>@Content.EditEntryTitle</h4>
+            <p class="text-muted">@Content.EditEntryPrompt</p>
+            
+            <EditForm Model="@this" OnValidSubmit="UpdateTrainingEntry">
+                <div class="mb-3">
+                    <InputRadioGroup @bind-Value="_selectedOption">
+                        <div class="form-check">
+                            <InputRadio class="form-check-input" Value="@ActivityOption.Yes" id="edit-option-yes" />
+                            <label class="form-check-label" for="edit-option-yes">
+                                Yes, I did @Content.FormatQuantity(Content.MinimalQuantity)
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <InputRadio class="form-check-input" Value="@ActivityOption.YesMore" id="edit-option-more" />
+                            <label class="form-check-label" for="edit-option-more">
+                                Yes, I did more than that
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <InputRadio class="form-check-input" Value="@ActivityOption.No" id="edit-option-no" />
+                            <label class="form-check-label" for="edit-option-no">
+                                No, I didn't @Content.Verb any
+                            </label>
+                        </div>
+                    </InputRadioGroup>
+                </div>
+                
+                @if (_selectedOption == ActivityOption.YesMore)
+                {
+                    <div class="mb-3">
+                        <label for="edit-repetitions" class="form-label">How many @Content.UnitPlural did you @Content.Verb?</label>
+                        <InputNumber class="form-control" id="edit-repetitions" @bind-Value="_repetitions" min="@(_minMoreQuantity)" />
+                        @if (_repetitionError)
+                        {
+                            <div class="text-danger mt-1">Please enter a valid number (minimum @_minMoreQuantity)</div>
+                        }
+                    </div>
+                }
+                
+                <div>
+                    <button type="submit" class="btn btn-primary me-2" disabled="@_isSaving">
+                        @if (_isSaving)
+                        {
+                            <span>Saving...</span>
+                        }
+                        else
+                        {
+                            <span>Update</span>
+                        }
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" @onclick="CancelEdit">
+                        Cancel
+                    </button>
+                </div>
+            </EditForm>
+        }
+        else
+        {
+            <p class="mb-3">@Content.PromptToday</p>
+            
+            <EditForm Model="@this" OnValidSubmit="SaveTrainingEntry">
+                <div class="mb-3">
+                    <InputRadioGroup @bind-Value="_selectedOption">
+                        <div class="form-check">
+                            <InputRadio class="form-check-input" Value="@ActivityOption.Yes" id="option-yes" />
+                            <label class="form-check-label" for="option-yes">
+                                Yes
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <InputRadio class="form-check-input" Value="@ActivityOption.YesMore" id="option-more" />
+                            <label class="form-check-label" for="option-more">
+                                Yes, I did even more
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <InputRadio class="form-check-input" Value="@ActivityOption.No" id="option-no" />
+                            <label class="form-check-label" for="option-no">
+                                No
+                            </label>
+                        </div>
+                    </InputRadioGroup>
+                </div>
+                
+                @if (_selectedOption == ActivityOption.YesMore)
+                {
+                    <div class="mb-3">
+                        <label for="repetitions" class="form-label">How many @Content.UnitPlural did you @Content.Verb?</label>
+                        <InputNumber class="form-control" id="repetitions" @bind-Value="_repetitions" min="@(_minMoreQuantity)" />
+                        @if (_repetitionError)
+                        {
+                            <div class="text-danger mt-1">Please enter a valid number (minimum @_minMoreQuantity)</div>
+                        }
+                    </div>
+                }
+                
+                <button type="submit" class="btn btn-primary" disabled="@_isSaving">
+                    @if (_isSaving)
+                    {
+                        <span>Saving...</span>
+                    }
+                    else
+                    {
+                        <span>Save</span>
+                    }
+                </button>
+            </EditForm>
+        }
+        
+        @if (!string.IsNullOrEmpty(_message))
+        {
+            <div class="alert @(_isError ? "alert-danger" : "alert-success") mt-3">
+                @_message
+            </div>
+        }
+    </div>
+</div>
+

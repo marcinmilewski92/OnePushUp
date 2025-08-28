@@ -1,9 +1,12 @@
 using Microsoft.AspNetCore.Components;
+using OnePushUp.Services;
 
 namespace OnePushUp.Components.Layout;
 
 public partial class MainLayout
 {
+    [Inject] public IActivityBranding Branding { get; set; } = default!;
+    [Inject] public IActivityContent Content { get; set; } = default!;
     private string GetPageTitle()
     {
         var uri = new Uri(Navigation.Uri);
@@ -11,10 +14,10 @@ public partial class MainLayout
 
         return path switch
         {
-            "/" => "Daily Goal",
+            "/" => Content.DailyTitle,
             "/stats" => "Stats",
             "/settings" => "Settings",
-            _ => "OnePushUp"
+            _ => Branding.AppDisplayName
         };
     }
 

@@ -2,13 +2,14 @@
 @using Microsoft.AspNetCore.Components.Routing
 @implements IDisposable
 
+<BrandingStyles />
 
 <div class="page">
     <div class="topbar">
         <div class="topbar-content">
             <div class="brand-with-logo">
-                <img src="splash.svg" width="60" height="60" alt="OnePushup Logo" /> 
-                <span class="brand-text">OnePushUp</span>
+                <img src="@Branding.SplashPath" width="60" height="60" alt="App Logo" /> 
+                <span class="brand-text">@Branding.AppDisplayName</span>
             </div>
             <div class="content-section">
                 <div class="nav-links-container">

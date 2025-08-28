@@ -1,0 +1,32 @@
+/* Shared custom styles placeholder */
+
+.card-header h3 {
+  margin: 0;
+}
+
+.streak-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05));
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+.streak-number {
+  font-size: 3rem;
+  margin: 0;
+}
+
+.streak-label {
+  color: #888;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-number {
+  font-weight: 700;
+}
+
+.stat-label {
+  color: #666;
+}
+

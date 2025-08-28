@@ -74,7 +74,7 @@ public class NotificationReceiver : BroadcastReceiver
                 }
                 else
                 {
-                    NotificationDisplayer?.ShowPushupNotification(context, intent);
+                    NotificationDisplayer?.ShowActivityNotification(context, intent);
                     if (!isTest)
                     {
                         Microsoft.Maui.Storage.Preferences.Default.Set(LastFiredDateKey, todayKey);

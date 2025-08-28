@@ -14,7 +14,7 @@ main {
 }
 
 .topbar {
-    background-image: linear-gradient(90deg, #9b0000 0%, #cc5500 70%);
+    background-image: linear-gradient(90deg, var(--brand-primary, #9b0000) 0%, var(--brand-accent, #cc5500) 70%);
     color: var(--text-light, #fff8f0);
     padding: 0.5rem 1rem;
     width: 100%;

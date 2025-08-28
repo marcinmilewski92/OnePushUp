@@ -3,44 +3,41 @@ using OnePushUp.Data;
 
 namespace OnePushUp.Repositories;
 
-public class TrainingEntryRepository : ITrainingEntryRepository
+public class ActivityEntryRepository : IActivityEntryRepository
 {
     private readonly OnePushUpDbContext _db;
 
-    private readonly record struct DailyTotal(DateTime Date, int TotalReps);
+    private readonly record struct DailyTotal(DateTime Date, int Total);
     
-    public TrainingEntryRepository(OnePushUpDbContext db)
+    public ActivityEntryRepository(OnePushUpDbContext db)
     {
         _db = db;
     }
     
-    public async Task<Guid> CreateAsync(TrainingEntry entry)
+    public async Task<Guid> CreateAsync(ActivityEntry entry)
     {
-        // Always store in UTC, but we'll preserve the original input time
-        // This ensures database consistency while respecting user's time zone
         if (entry.DateTime == default)
         {
             entry.DateTime = DateTimeOffset.UtcNow;
         }
         else if (entry.DateTime.Offset != TimeSpan.Zero)
         {
-            // Convert to UTC if not already
             entry.DateTime = entry.DateTime.ToUniversalTime();
         }
 
-        var entryResult = await _db.TrainingEntries.AddAsync(entry);
+        var entryResult = await _db.ActivityEntries.AddAsync(entry);
         await _db.SaveChangesAsync();
         return entryResult.Entity.Id;
     }
     
-    public async Task<TrainingEntry?> GetEntryByIdAsync(Guid entryId)
+    public async Task<ActivityEntry?> GetEntryByIdAsync(Guid entryId)
     {
-        return await _db.TrainingEntries.FindAsync(entryId);
+        return await _db.ActivityEntries.FindAsync(entryId);
     }
     
-    public async Task<bool> UpdateAsync(TrainingEntry entry)
+    public async Task<bool> UpdateAsync(ActivityEntry entry)
     {
-        _db.TrainingEntries.Update(entry);
+        _db.ActivityEntries.Update(entry);
         var result = await _db.SaveChangesAsync();
         return result > 0;
     }
@@ -51,8 +48,7 @@ public class TrainingEntryRepository : ITrainingEntryRepository
         var startUtc = start.ToUniversalTime();
         var endUtc = end.ToUniversalTime();
 
-        // Work around SQLite/DateTimeOffset translation limitations by filtering in memory
-        var entries = await _db.TrainingEntries.AsNoTracking()
+        var entries = await _db.ActivityEntries.AsNoTracking()
             .Where(e => e.UserId == userId)
             .Select(e => new { e.DateTime })
             .ToListAsync();
@@ -60,13 +56,13 @@ public class TrainingEntryRepository : ITrainingEntryRepository
         return entries.Any(e => e.DateTime >= startUtc && e.DateTime < endUtc);
     }
 
-    public async Task<TrainingEntry?> GetEntryForTodayAsync(Guid userId)
+    public async Task<ActivityEntry?> GetEntryForTodayAsync(Guid userId)
     {
         var (start, end) = GetUserLocalDateRange();
         var startUtc = start.ToUniversalTime();
         var endUtc = end.ToUniversalTime();
 
-        var entries = await _db.TrainingEntries.AsNoTracking()
+        var entries = await _db.ActivityEntries.AsNoTracking()
             .Where(e => e.UserId == userId)
             .ToListAsync();
 
@@ -76,9 +72,9 @@ public class TrainingEntryRepository : ITrainingEntryRepository
             .FirstOrDefault();
     }
     
-    public async Task<List<TrainingEntry>> GetEntriesForUserAsync(Guid userId)
+    public async Task<List<ActivityEntry>> GetEntriesForUserAsync(Guid userId)
     {
-        return await _db.TrainingEntries
+        return await _db.ActivityEntries
             .AsNoTracking()
             .Where(e => e.UserId == userId)
             .OrderByDescending(e => e.DateTime)
@@ -87,16 +83,14 @@ public class TrainingEntryRepository : ITrainingEntryRepository
 
     private async Task<List<DailyTotal>> GetEntriesByLocalDateAsync(Guid userId)
     {
-        // Fetch entries into memory to handle time zone conversion without
-        // relying on provider-specific translations (e.g. AddMinutes).
-        var entries = await _db.TrainingEntries
+        var entries = await _db.ActivityEntries
             .AsNoTracking()
-            .Where(e => e.UserId == userId && e.NumberOfRepetitions > 0)
+            .Where(e => e.UserId == userId && e.Quantity > 0)
             .ToListAsync();
 
         return entries
             .GroupBy(e => e.DateTime.ToLocalTime().Date)
-            .Select(g => new DailyTotal(g.Key, g.Sum(e => e.NumberOfRepetitions)))
+            .Select(g => new DailyTotal(g.Key, g.Sum(e => e.Quantity)))
             .OrderByDescending(dt => dt.Date)
             .ToList();
     }
@@ -105,7 +99,7 @@ public class TrainingEntryRepository : ITrainingEntryRepository
     {
         var todayEntry = await GetEntryForTodayAsync(userId);
 
-        if (todayEntry != null && todayEntry.NumberOfRepetitions == 0)
+        if (todayEntry != null && todayEntry.Quantity == 0)
         {
             return (new List<DateTime>(), new List<DailyTotal>());
         }
@@ -145,19 +139,19 @@ public class TrainingEntryRepository : ITrainingEntryRepository
         return streakDates.Count;
     }
     
-    public async Task<int> GetTotalPushupsInCurrentStreakAsync(Guid userId)
+    public async Task<int> GetTotalQuantityInCurrentStreakAsync(Guid userId)
     {
         var (streakDates, entriesByLocalDate) = await GetOrderedStreakDatesAsync(userId);
-        var lookup = entriesByLocalDate.ToDictionary(e => e.Date, e => e.TotalReps);
+        var lookup = entriesByLocalDate.ToDictionary(e => e.Date, e => e.Total);
         return streakDates.Sum(date => lookup.GetValueOrDefault(date, 0));
     }
     
-    public async Task<int> GetTotalPushupsAsync(Guid userId)
+    public async Task<int> GetTotalQuantityAsync(Guid userId)
     {
-        return await _db.TrainingEntries
+        return await _db.ActivityEntries
             .AsNoTracking()
             .Where(e => e.UserId == userId)
-            .SumAsync(e => e.NumberOfRepetitions);
+            .SumAsync(e => e.Quantity);
     }
 
     public async Task<bool> DeleteEntryForTodayAsync(Guid userId)
@@ -166,7 +160,7 @@ public class TrainingEntryRepository : ITrainingEntryRepository
         var startUtc = start.ToUniversalTime();
         var endUtc = end.ToUniversalTime();
 
-        var candidates = await _db.TrainingEntries
+        var candidates = await _db.ActivityEntries
             .Where(e => e.UserId == userId)
             .ToListAsync();
 
@@ -175,16 +169,14 @@ public class TrainingEntryRepository : ITrainingEntryRepository
 
         if (todayEntry == null)
         {
-            return false; // No entry found to delete
+            return false;
         }
 
-        _db.TrainingEntries.Remove(todayEntry);
+        _db.ActivityEntries.Remove(todayEntry);
         var result = await _db.SaveChangesAsync();
 
         return result > 0;
     }
-
-    // Helper methods for time zone handling
 
     private (DateTimeOffset start, DateTimeOffset end) GetUserLocalDateRange()
     {

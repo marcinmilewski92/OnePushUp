@@ -6,20 +6,22 @@ using OnePushUp.Services;
 
 namespace OnePushUp.Components.HomeComponents;
 
-public enum PushupOption
+public enum ActivityOption
 {
     Yes,
     YesMore,
     No
 }
 
-public partial class DailyPushup
+public partial class DailyActivity
 {
     [Inject]
-    private TrainingService TrainingService { get; set; } = default!;
+    private IActivityContent Content { get; set; } = default!;
+    [Inject]
+    private ActivityService ActivityService { get; set; } = default!;
 
     [Inject]
-    private ILogger<DailyPushup> Logger { get; set; } = default!;
+    private ILogger<DailyActivity> Logger { get; set; } = default!;
     
     [Parameter]
     public User CurrentUser { get; set; } = default!;
@@ -33,13 +35,15 @@ public partial class DailyPushup
     private bool _isEditing = false;
     private string _message = string.Empty;
     private bool _isError;
-    private PushupOption _selectedOption = PushupOption.Yes;
+    private ActivityOption _selectedOption = ActivityOption.Yes;
     private int _repetitions = 2;
     private bool _repetitionError;
-    private TrainingEntryDto? _lastEntry;
+    private ActivityEntryDto? _lastEntry;
+    private int _minMoreQuantity => Math.Max(Content.MinimalQuantity + 1, Content.MinimalQuantity == int.MaxValue ? int.MaxValue : Content.MinimalQuantity + 1);
     
     protected override async Task OnInitializedAsync()
     {
+        _repetitions = Math.Max(Content.MinimalQuantity + 1, 2);
         await CheckTodayStatus();
     }
 
@@ -56,12 +60,12 @@ public partial class DailyPushup
         try
         {
             _isLoading = true;
-            _hasCompletedToday = await TrainingService.HasEntryForTodayAsync(CurrentUser.Id);
+            _hasCompletedToday = await ActivityService.HasEntryForTodayAsync(CurrentUser.Id);
             
             if (_hasCompletedToday)
             {
                 // Get today's entry for display and potential editing
-                _lastEntry = await TrainingService.GetTodayEntryAsync(CurrentUser.Id);
+                _lastEntry = await ActivityService.GetTodayEntryAsync(CurrentUser.Id);
                 
                 // Pre-set the form values based on today's entry
                 if (_lastEntry != null)
@@ -96,20 +100,20 @@ public partial class DailyPushup
         }
     }
 
-    private void SetSelectedOptionFromEntry(TrainingEntryDto entry)
+    private void SetSelectedOptionFromEntry(ActivityEntryDto entry)
     {
-        if (entry.NumberOfRepetitions == 0)
+        if (entry.Quantity == 0)
         {
-            _selectedOption = PushupOption.No;
+            _selectedOption = ActivityOption.No;
         }
-        else if (entry.NumberOfRepetitions == 1)
+        else if (entry.Quantity == Content.MinimalQuantity)
         {
-            _selectedOption = PushupOption.Yes;
+            _selectedOption = ActivityOption.Yes;
         }
         else
         {
-            _selectedOption = PushupOption.YesMore;
-            _repetitions = entry.NumberOfRepetitions;
+            _selectedOption = ActivityOption.YesMore;
+            _repetitions = entry.Quantity;
         }
     }
     
@@ -123,17 +127,17 @@ public partial class DailyPushup
     {
         repetitions = 0;
 
-        if (_selectedOption == PushupOption.Yes)
+        if (_selectedOption == ActivityOption.Yes)
         {
-            repetitions = 1;
+            repetitions = Content.MinimalQuantity;
         }
-        else if (_selectedOption == PushupOption.YesMore)
+        else if (_selectedOption == ActivityOption.YesMore)
         {
-            if (_repetitions < 2)
+            if (_repetitions < _minMoreQuantity)
             {
                 _repetitionError = true;
                 _isError = true;
-                _message = "Please enter a valid number of pushups (minimum 2).";
+                _message = $"Please enter a valid number (minimum {_minMoreQuantity}).";
                 return false;
             }
 
@@ -166,22 +170,16 @@ public partial class DailyPushup
             }
 
             // Update the existing entry
-            bool success = await TrainingService.UpdateEntryAsync(_lastEntry.Id, repetitions);
+            bool success = await ActivityService.UpdateEntryAsync(_lastEntry.Id, repetitions);
             
             if (success)
             {
                 // Refresh last entry
-                _lastEntry = await TrainingService.GetTodayEntryAsync(CurrentUser.Id);
+                _lastEntry = await ActivityService.GetTodayEntryAsync(CurrentUser.Id);
                 
-                if (_selectedOption == PushupOption.No)
-                {
-                    _message = "Your record has been updated to 0 pushups for today.";
-                    _isError = false; // Not really an error, just a different status
-                }
-                else
-                {
-                    _message = "Great job! Your pushup record has been updated.";
-                }
+                var isZero = _selectedOption == ActivityOption.No;
+                _message = Content.UpdateSuccessMessage(isZero);
+                _isError = false;
                 
                 _isEditing = false; // Exit edit mode
                 
@@ -221,20 +219,13 @@ public partial class DailyPushup
             }
 
             // Always save an entry, even for "No" responses
-            await TrainingService.CreateEntryAsync(CurrentUser.Id, repetitions);
+            await ActivityService.CreateEntryAsync(CurrentUser.Id, repetitions);
             
             // Refresh last entry
-            _lastEntry = await TrainingService.GetTodayEntryAsync(CurrentUser.Id);
-            
-            if (_selectedOption == PushupOption.No)
-            {
-                _message = "We've recorded your response. Remember, even one pushup is better than none!";
-                _isError = false; // Not really an error, but we'll show it differently
-            }
-            else
-            {
-                _message = "Great job! Your pushup has been recorded.";
-            }
+            _lastEntry = await ActivityService.GetTodayEntryAsync(CurrentUser.Id);
+            var isZero = _selectedOption == ActivityOption.No;
+            _message = Content.SaveSuccessMessage(isZero);
+            _isError = false;
             
             _hasCompletedToday = true;
             
@@ -253,3 +244,4 @@ public partial class DailyPushup
         }
     }
 }
+

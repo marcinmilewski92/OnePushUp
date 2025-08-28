@@ -13,11 +13,13 @@ namespace OnePushUp.Platforms.Android;
 public class AndroidNotificationScheduler : INotificationScheduler
 {
     private readonly ILogger<AndroidNotificationScheduler> _logger;
+    private readonly IActivityContent _content;
     private const string LastScheduledKey = "last_notification_scheduled";
 
-    public AndroidNotificationScheduler(ILogger<AndroidNotificationScheduler> logger)
+    public AndroidNotificationScheduler(ILogger<AndroidNotificationScheduler> logger, IActivityContent content)
     {
         _logger = logger;
+        _content = content;
     }
 
     public async Task SendTestAsync()
@@ -36,11 +38,11 @@ public class AndroidNotificationScheduler : INotificationScheduler
             if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
             {
                 var channel = new NotificationChannel(
-                    "pushup_reminders",
-                    "Pushup Reminders",
+                    NotificationDisplayer.ChannelId,
+                    $"{_content.AppName} Reminders",
                     NotificationImportance.High)
                 {
-                    Description = "Daily reminders to do your pushups",
+                    Description = $"Daily reminders to {_content.Verb} your {_content.UnitPlural}",
                     LockscreenVisibility = NotificationVisibility.Public
                 };
 
@@ -61,8 +63,8 @@ public class AndroidNotificationScheduler : INotificationScheduler
             // Use default system icon
             int iconId = global::Android.Resource.Drawable.IcDialogInfo;
 
-            var builder = new NotificationCompat.Builder(context, "pushup_reminders")
-                .SetContentTitle("OnePushUp Test")
+            var builder = new NotificationCompat.Builder(context, NotificationDisplayer.ChannelId)
+                .SetContentTitle($"{_content.AppName} Test")
                 .SetContentText($"This is a test notification - {DateTime.Now:HH:mm:ss}")
                 .SetSmallIcon(iconId)
                 .SetAutoCancel(true)
@@ -349,11 +351,11 @@ public class AndroidNotificationScheduler : INotificationScheduler
                         if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
                         {
                             var channel = new NotificationChannel(
-                                "pushup_reminders",
-                                "Pushup Reminders",
+                                NotificationDisplayer.ChannelId,
+                                $"{_content.AppName} Reminders",
                                 NotificationImportance.High)
                             {
-                                Description = "Daily reminders to do your pushups",
+                                Description = $"Daily reminders to {_content.Verb} your {_content.UnitPlural}",
                                 LockscreenVisibility = NotificationVisibility.Public
                             };
 
@@ -373,9 +375,9 @@ public class AndroidNotificationScheduler : INotificationScheduler
                         // Use default system icon
                         int iconId = global::Android.Resource.Drawable.IcDialogInfo;
 
-                        var builder = new NotificationCompat.Builder(context, "pushup_reminders")
-                            .SetContentTitle("OnePushUp Reminder")
-                            .SetContentText("Time to do your daily pushup! Do it now to not lose your streak!")
+                        var builder = new NotificationCompat.Builder(context, NotificationDisplayer.ChannelId)
+                            .SetContentTitle($"{_content.AppName} Reminder")
+                            .SetContentText($"Time to {_content.Verb} your daily {_content.UnitSingular}! Do it now to not lose your streak!")
                             .SetSmallIcon(iconId)
                             .SetContentIntent(pendingIntent)
                             .SetAutoCancel(true)

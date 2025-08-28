@@ -1,6 +1,6 @@
 <div class="card mt-4">
     <div class="card-header">
-        <h3>Daily Pushup Challenge</h3>
+        <h3>@Content.DailyTitle</h3>
     </div>
     <div class="card-body">
         @if (_isLoading)
@@ -9,25 +9,18 @@
         }
         else if (_hasCompletedToday && !_isEditing)
         {
-            <div class="alert @(_lastEntry != null && _lastEntry.NumberOfRepetitions > 0 ? "alert-success" : "alert-warning")">
-                @if (_lastEntry != null && _lastEntry.NumberOfRepetitions > 0)
+            <div class="alert @(_lastEntry != null && _lastEntry.Quantity > 0 ? "alert-success" : "alert-warning")">
+                @if (_lastEntry != null && _lastEntry.Quantity > 0)
                 {
-                    <h4>Great job! 💪</h4>
-                    <p>You've already completed your pushup challenge for today.</p>
+                    <h4>@Content.AlreadyCompletedTitle</h4>
+                    <p>@(Content.AlreadyCompletedMessage(_lastEntry!.Quantity))</p>
                     
-                    @if (_lastEntry.NumberOfRepetitions > 1)
-                    {
-                        <p>You did @_lastEntry.NumberOfRepetitions pushups today!</p>
-                    }
-                    else
-                    {
-                        <p>You did 1 pushup today!</p>
-                    }
+                    
                 }
                 else
                 {
-                    <h4>Challenge recorded</h4>
-                    <p>You've recorded 0 pushups for today. Don't worry, there's always tomorrow!</p>
+                    <h4>@Content.RecordedZeroTitle</h4>
+                    <p>@Content.RecordedZeroMessage</p>
                 }
                 
                 <div class="mt-2">
@@ -39,41 +32,41 @@
         }
         else if (_isEditing)
         {
-            <h4>Edit Today's Pushup Entry</h4>
-            <p class="text-muted">Update your pushup count for today</p>
+            <h4>@Content.EditEntryTitle</h4>
+            <p class="text-muted">@Content.EditEntryPrompt</p>
             
             <EditForm Model="@this" OnValidSubmit="UpdateTrainingEntry">
                 <div class="mb-3">
                     <InputRadioGroup @bind-Value="_selectedOption">
                         <div class="form-check">
-                            <InputRadio class="form-check-input" Value="@PushupOption.Yes" id="edit-option-yes" />
+                            <InputRadio class="form-check-input" Value="@ActivityOption.Yes" id="edit-option-yes" />
                             <label class="form-check-label" for="edit-option-yes">
-                                Yes, I did one pushup
+                                Yes, I did @Content.FormatQuantity(Content.MinimalQuantity)
                             </label>
                         </div>
                         <div class="form-check">
-                            <InputRadio class="form-check-input" Value="@PushupOption.YesMore" id="edit-option-more" />
+                            <InputRadio class="form-check-input" Value="@ActivityOption.YesMore" id="edit-option-more" />
                             <label class="form-check-label" for="edit-option-more">
-                                Yes, I did more than one
+                                Yes, I did more than that
                             </label>
                         </div>
                         <div class="form-check">
-                            <InputRadio class="form-check-input" Value="@PushupOption.No" id="edit-option-no" />
+                            <InputRadio class="form-check-input" Value="@ActivityOption.No" id="edit-option-no" />
                             <label class="form-check-label" for="edit-option-no">
-                                No, I didn't do any pushups
+                                No, I didn't @Content.Verb any
                             </label>
                         </div>
                     </InputRadioGroup>
                 </div>
                 
-                @if (_selectedOption == PushupOption.YesMore)
+                @if (_selectedOption == ActivityOption.YesMore)
                 {
                     <div class="mb-3">
-                        <label for="edit-repetitions" class="form-label">How many pushups did you do?</label>
-                        <InputNumber class="form-control" id="edit-repetitions" @bind-Value="_repetitions" min="2" />
+                        <label for="edit-repetitions" class="form-label">How many @Content.UnitPlural did you @Content.Verb?</label>
+                        <InputNumber class="form-control" id="edit-repetitions" @bind-Value="_repetitions" min="@(_minMoreQuantity)" />
                         @if (_repetitionError)
                         {
-                            <div class="text-danger mt-1">Please enter a valid number (minimum 2)</div>
+                            <div class="text-danger mt-1">Please enter a valid number (minimum @_minMoreQuantity)</div>
                         }
                     </div>
                 }
@@ -97,25 +90,25 @@
         }
         else
         {
-            <p class="mb-3">Did you do your one pushup today?</p>
+            <p class="mb-3">@Content.PromptToday</p>
             
             <EditForm Model="@this" OnValidSubmit="SaveTrainingEntry">
                 <div class="mb-3">
                     <InputRadioGroup @bind-Value="_selectedOption">
                         <div class="form-check">
-                            <InputRadio class="form-check-input" Value="@PushupOption.Yes" id="option-yes" />
+                            <InputRadio class="form-check-input" Value="@ActivityOption.Yes" id="option-yes" />
                             <label class="form-check-label" for="option-yes">
                                 Yes
                             </label>
                         </div>
                         <div class="form-check">
-                            <InputRadio class="form-check-input" Value="@PushupOption.YesMore" id="option-more" />
+                            <InputRadio class="form-check-input" Value="@ActivityOption.YesMore" id="option-more" />
                             <label class="form-check-label" for="option-more">
                                 Yes, I did even more
                             </label>
                         </div>
                         <div class="form-check">
-                            <InputRadio class="form-check-input" Value="@PushupOption.No" id="option-no" />
+                            <InputRadio class="form-check-input" Value="@ActivityOption.No" id="option-no" />
                             <label class="form-check-label" for="option-no">
                                 No
                             </label>
@@ -123,14 +116,14 @@
                     </InputRadioGroup>
                 </div>
                 
-                @if (_selectedOption == PushupOption.YesMore)
+                @if (_selectedOption == ActivityOption.YesMore)
                 {
                     <div class="mb-3">
-                        <label for="repetitions" class="form-label">How many pushups did you do?</label>
-                        <InputNumber class="form-control" id="repetitions" @bind-Value="_repetitions" min="2" />
+                        <label for="repetitions" class="form-label">How many @Content.UnitPlural did you @Content.Verb?</label>
+                        <InputNumber class="form-control" id="repetitions" @bind-Value="_repetitions" min="@(_minMoreQuantity)" />
                         @if (_repetitionError)
                         {
-                            <div class="text-danger mt-1">Please enter a valid number (minimum 2)</div>
+                            <div class="text-danger mt-1">Please enter a valid number (minimum @_minMoreQuantity)</div>
                         }
                     </div>
                 }
