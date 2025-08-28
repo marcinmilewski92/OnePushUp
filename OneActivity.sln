@@ -1,12 +1,13 @@
-﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OnePushUp.Data", "OnePushUp.Data\OnePushUp.Data.csproj", "{5C93D4DD-8A3C-42ED-B2B3-328F6049B328}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OneActivity.Core", "OneActivity.Core\OneActivity.Core.csproj", "{1A2B3C4D-1111-2222-3333-444455556666}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OneActivity.Data", "OneActivity.Data\OneActivity.Data.csproj", "{5C93D4DD-8A3C-42ED-B2B3-328F6049B328}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OneActivity.App.Pushups", "OneActivity.App.Pushups\OneActivity.App.Pushups.csproj", "{77778888-9999-AAAA-BBBB-CCCCDDDDEEEE}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OneActivity.App.Reading", "OneActivity.App.Reading\OneActivity.App.Reading.csproj", "{AAAABBBB-CCCC-DDDD-EEEE-FFFF00001111}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OneActivity.Tests", "tests\OneActivity.Tests\OneActivity.Tests.csproj", "{22223333-4444-5555-6666-777788889999}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -14,19 +15,25 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{5C93D4DD-8A3C-42ED-B2B3-328F6049B328}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5C93D4DD-8A3C-42ED-B2B3-328F6049B328}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5C93D4DD-8A3C-42ED-B2B3-328F6049B328}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5C93D4DD-8A3C-42ED-B2B3-328F6049B328}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1A2B3C4D-1111-2222-3333-444455556666}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1A2B3C4D-1111-2222-3333-444455556666}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1A2B3C4D-1111-2222-3333-444455556666}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1A2B3C4D-1111-2222-3333-444455556666}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5C93D4DD-8A3C-42ED-B2B3-328F6049B328}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5C93D4DD-8A3C-42ED-B2B3-328F6049B328}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5C93D4DD-8A3C-42ED-B2B3-328F6049B328}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5C93D4DD-8A3C-42ED-B2B3-328F6049B328}.Release|Any CPU.Build.0 = Release|Any CPU
 		{77778888-9999-AAAA-BBBB-CCCCDDDDEEEE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{77778888-9999-AAAA-BBBB-CCCCDDDDEEEE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{77778888-9999-AAAA-BBBB-CCCCDDDDEEEE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{77778888-9999-AAAA-BBBB-CCCCDDDDEEEE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AAAABBBB-CCCC-DDDD-EEEE-FFFF00001111}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AAAABBBB-CCCC-DDDD-EEEE-FFFF00001111}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AAAABBBB-CCCC-DDDD-EEEE-FFFF00001111}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AAAABBBB-CCCC-DDDD-EEEE-FFFF00001111}.Release|Any CPU.Build.0 = Release|Any CPU
+		{22223333-4444-5555-6666-777788889999}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{22223333-4444-5555-6666-777788889999}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{22223333-4444-5555-6666-777788889999}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{22223333-4444-5555-6666-777788889999}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
-EndProject("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OneActivity.App.Reading", "OneActivity.App.Reading\OneActivity.App.Reading.csproj", "{AAAABBBB-CCCC-DDDD-EEEE-FFFF00001111}"
-EndProject
-Global
+EndGlobal

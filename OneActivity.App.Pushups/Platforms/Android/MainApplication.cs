@@ -49,8 +49,8 @@ public class MainApplication : MauiApplication
                     if (notificationsEnabled)
                     {
                         Logger.LogInformation("Restoring notifications on app startup");
-                        Intent restoreIntent = new Intent(this, Java.Lang.Class.FromType(typeof(Platforms.Android.NotificationReceiver)));
-                        restoreIntent.SetAction(Platforms.Android.NotificationIntentConstants.ActionRestoreNotifications);
+                        Intent restoreIntent = new Intent(this, Java.Lang.Class.FromType(typeof(OneActivity.Core.Platforms.Android.NotificationReceiver)));
+                        restoreIntent.SetAction(OneActivity.Core.Platforms.Android.NotificationIntentConstants.ActionRestoreNotifications);
                         SendBroadcast(restoreIntent);
                     }
                 }

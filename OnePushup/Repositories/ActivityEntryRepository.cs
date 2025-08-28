@@ -1,15 +1,15 @@
 using Microsoft.EntityFrameworkCore;
-using OnePushUp.Data;
+using OneActivity.Data;
 
 namespace OnePushUp.Repositories;
 
 public class ActivityEntryRepository : IActivityEntryRepository
 {
-    private readonly OnePushUpDbContext _db;
+    private readonly OneActivityDbContext _db;
 
     private readonly record struct DailyTotal(DateTime Date, int Total);
     
-    public ActivityEntryRepository(OnePushUpDbContext db)
+    public ActivityEntryRepository(OneActivityDbContext db)
     {
         _db = db;
     }

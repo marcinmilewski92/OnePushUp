@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace OnePushUp.Data.Migrations
+namespace OneActivity.Data.Migrations
 {
     public partial class RenameTrainingToActivity : Migration
     {

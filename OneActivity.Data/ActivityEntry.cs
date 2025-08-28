@@ -1,4 +1,4 @@
-namespace OnePushUp.Data;
+namespace OneActivity.Data;
 
 // Generic activity entry replacing pushup-specific naming.
 // Mapped to existing DB table/columns via DbContext to preserve data.

@@ -22,8 +22,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\OnePushUp.Data\OnePushUp.Data.csproj" />
+    <ProjectReference Include="..\..\OneActivity.Data\OneActivity.Data.csproj" />
     <ProjectReference Include="..\..\OneActivity.Core\OneActivity.Core.csproj" />
   </ItemGroup>
 
 </Project>
+

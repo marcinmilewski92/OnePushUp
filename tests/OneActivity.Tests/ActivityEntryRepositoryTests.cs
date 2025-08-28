@@ -2,22 +2,22 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
-using OnePushUp.Data;
+using OneActivity.Data;
 using OnePushUp.Repositories;
 using Xunit;
 
-namespace OnePushUp.Tests;
+namespace OneActivity.Tests;
 
-public class TrainingEntryRepositoryTests
+public class ActivityEntryRepositoryTests
 {
-    private static OnePushUpDbContext CreateDbContext()
+    private static OneActivityDbContext CreateDbContext()
     {
         var connection = new SqliteConnection("DataSource=:memory:");
         connection.Open();
-        var options = new DbContextOptionsBuilder<OnePushUpDbContext>()
+        var options = new DbContextOptionsBuilder<OneActivityDbContext>()
             .UseSqlite(connection)
             .Options;
-        var db = new OnePushUpDbContext(options);
+        var db = new OneActivityDbContext(options);
         db.Database.EnsureCreated();
         return db;
     }
@@ -43,3 +43,4 @@ public class TrainingEntryRepositoryTests
         Assert.True(hasToday);
     }
 }
+

@@ -1,14 +1,14 @@
 using Microsoft.EntityFrameworkCore;
-using OnePushUp.Data;
+using OneActivity.Data;
 using OnePushUp.Models.Dtos;
 
 namespace OnePushUp.Services;
 
 public class UserService
 {
-    private readonly OnePushUpDbContext _dbContext;
+    private readonly OneActivityDbContext _dbContext;
 
-    public UserService(OnePushUpDbContext dbContext)
+    public UserService(OneActivityDbContext dbContext)
     {
         _dbContext = dbContext;
     }
@@ -41,4 +41,3 @@ public class UserService
         return true;
     }
 }
-

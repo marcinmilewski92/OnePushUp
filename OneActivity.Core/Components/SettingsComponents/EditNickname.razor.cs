@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
-using OnePushUp.Data;
+using OneActivity.Data;
 using OnePushUp.Models.Dtos;
 
 namespace OnePushUp.Components.SettingsComponents;

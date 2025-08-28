@@ -1,12 +1,12 @@
 using Microsoft.EntityFrameworkCore;
-using OnePushUp.Data;
+using OneActivity.Data;
 
 namespace OnePushUp.Repositories;
 
 public class UsersRepository : IUsersRepository
 {
-    private readonly OnePushUpDbContext _db;
-    public UsersRepository(OnePushUpDbContext db)
+    private readonly OneActivityDbContext _db;
+    public UsersRepository(OneActivityDbContext db)
     {
         _db = db;
     }
@@ -37,4 +37,3 @@ public class UsersRepository : IUsersRepository
         return true;
     }
 }
-

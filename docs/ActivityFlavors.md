@@ -30,6 +30,6 @@ UI Wiring
 
 Data Preservation
 
-- `ActivityEntry` maps to legacy table `TrainingEntries` with column `NumberOfRepetitions` → `Quantity` using Fluent API in `OnePushUpDbContext`.
+- `ActivityEntry` maps to legacy table `TrainingEntries` with column `NumberOfRepetitions` → `Quantity` using Fluent API in `OneActivityDbContext`.
 - No migration is required to keep existing user data.
 

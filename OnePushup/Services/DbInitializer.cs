@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using OnePushUp.Data;
+using OneActivity.Data;
 
 namespace OnePushUp.Services;
 
@@ -20,7 +20,7 @@ public class DbInitializer
         try
         {
             using var scope = _serviceProvider.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<OnePushUpDbContext>();
+            var dbContext = scope.ServiceProvider.GetRequiredService<OneActivityDbContext>();
             
             _logger.LogInformation("Starting database initialization...");
             

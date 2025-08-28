@@ -1,10 +1,11 @@
+#if ANDROID
 using Android.App;
 using Android.Content;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace OneActivity.App.Pushups.Platforms.Android;
+namespace OneActivity.Core.Platforms.Android;
 
 [BroadcastReceiver(Enabled = true, Exported = true)]
 [IntentFilter(new[] {
@@ -15,6 +16,7 @@ namespace OneActivity.App.Pushups.Platforms.Android;
 })]
 public class NotificationReceiver : BroadcastReceiver
 {
+    private const string LastFiredDateKey = "last_notification_fired_date"; // yyyy-MM-dd
     private ILogger<NotificationReceiver> Logger => _logger ??=
         MauiApplication.Current?.Services?.GetService<ILogger<NotificationReceiver>>()
         ?? NullLogger<NotificationReceiver>.Instance;
@@ -53,8 +55,21 @@ public class NotificationReceiver : BroadcastReceiver
             if (action == NotificationIntentConstants.ActionDailyNotification ||
                 action == NotificationIntentConstants.ActionTestNotificationAlarm)
             {
-                NotificationDisplayer?.ShowActivityNotification(context, intent);
-                AlarmScheduler?.RescheduleForTomorrow(context);
+                var todayKey = DateTime.Now.ToString("yyyy-MM-dd");
+                var lastFired = Microsoft.Maui.Storage.Preferences.Default.Get(LastFiredDateKey, string.Empty);
+                if (!isTestNotification && string.Equals(todayKey, lastFired, StringComparison.Ordinal))
+                {
+                    // Deduplicate only real daily notifications
+                }
+                else
+                {
+                    NotificationDisplayer?.ShowActivityNotification(context, intent);
+                    if (!isTestNotification)
+                    {
+                        Microsoft.Maui.Storage.Preferences.Default.Set(LastFiredDateKey, todayKey);
+                    }
+                    AlarmScheduler?.RescheduleForTomorrow(context);
+                }
             }
         }
         catch (Exception ex)
@@ -64,4 +79,5 @@ public class NotificationReceiver : BroadcastReceiver
         }
     }
 }
+#endif
 

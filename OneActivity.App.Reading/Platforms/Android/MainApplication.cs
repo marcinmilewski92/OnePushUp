@@ -32,4 +32,3 @@ public class MainApplication : MauiApplication
         public override void OnReceive(Context? context, Intent? intent) { }
     }
 }
-

@@ -1,12 +1,12 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Maui.Storage;
-using OnePushUp.Data;
+using OneActivity.Data;
 using OnePushUp.Repositories;
 using OnePushUp.Services;
 using OneActivity.App.Reading.Flavors.Reading;
 #if ANDROID
-using OneActivity.App.Reading.Platforms.Android;
+using OneActivity.Core.Platforms.Android;
 #endif
 
 namespace OneActivity.App.Reading;
@@ -20,31 +20,12 @@ public static class MauiProgram
             .UseMauiApp<App>()
             .ConfigureFonts(fonts => { fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular"); });
 
-        builder.Services.AddMauiBlazorWebView();
+        OneActivity.Core.Hosting.OneActivityHostExtensions.UseOneActivityCore(builder, () => Path.Combine(FileSystem.AppDataDirectory, "OnePushUp.db"));
 
-        builder.Services.AddDbContext<OnePushUpDbContext>(options =>
-        {
-            var dbPath = Path.Combine(FileSystem.AppDataDirectory, "OnePushUp.db");
-            options.UseSqlite($"Data Source={dbPath}");
-        });
-        builder.Services.AddTransient<IUsersRepository, UsersRepository>();
-        builder.Services.AddTransient<IActivityEntryRepository, ActivityEntryRepository>();
-
-        builder.Services.AddTransient<ActivityService>();
+        
         builder.Services.AddSingleton<IActivityContent, ReadingContent>();
         builder.Services.AddSingleton<IActivityBranding, ReadingBranding>();
-        builder.Services.AddTransient<UserService>();
-        #if ANDROID
-        builder.Services.AddSingleton<INotificationScheduler, AndroidNotificationScheduler>();
-        builder.Services.AddSingleton<IAlarmScheduler, AlarmScheduler>();
-        builder.Services.AddSingleton<INotificationDisplayer, NotificationDisplayer>();
-        #else
-        builder.Services.AddSingleton<INotificationScheduler, DefaultNotificationScheduler>();
-        #endif
-        builder.Services.AddTransient<NotificationService>();
-        builder.Services.AddSingleton<DbInitializer>();
-
-#if DEBUG
+        #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();
         builder.Logging.AddDebug();
 #endif

@@ -1,8 +1,9 @@
-namespace OneActivity.App.Reading.Platforms.Android;
+#if ANDROID
+namespace OneActivity.Core.Platforms.Android;
 
 public static class NotificationIntentConstants
 {
-    public const string ActionDailyNotification = "com.oneactivity.reading.DAILY_NOTIFICATION";
+    public const string ActionDailyNotification = "DAILY_NOTIFICATION";
     public const string ActionRestoreNotifications = "RESTORE_NOTIFICATIONS";
     public const string ActionTestNotificationAlarm = "TEST_NOTIFICATION_ALARM";
 
@@ -13,4 +14,5 @@ public static class NotificationIntentConstants
     public const string ExtraWindowAlarm = "window_alarm";
     public const string ExtraMinuteOffset = "minute_offset";
 }
+#endif
 

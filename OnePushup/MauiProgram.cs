@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Logging;
-using OnePushUp.Data;
+using OneActivity.Data;
 using OnePushUp.Repositories;
 using OnePushUp.Services;
 using Microsoft.EntityFrameworkCore;
@@ -23,7 +23,7 @@ public static class MauiProgram
         
         // Database and repositories
         // Explicitly configure SQLite provider and reliable app data path
-        builder.Services.AddDbContext<OnePushUpDbContext>(options =>
+        builder.Services.AddDbContext<OneActivityDbContext>(options =>
         {
             var dbPath = Path.Combine(FileSystem.AppDataDirectory, "OnePushUp.db");
             options.UseSqlite($"Data Source={dbPath}");
@@ -43,7 +43,7 @@ public static class MauiProgram
         else
         {
             builder.Services.AddSingleton<IActivityContent, PushupContent>();
-            builder.Services.AddSingleton<IActivityBranding, PushupBranding>();
+            builder.Services.AddSingleton<IActivityes yBranding, PushupBranding>();
         }
         builder.Services.AddTransient<UserService>();
 #if ANDROID

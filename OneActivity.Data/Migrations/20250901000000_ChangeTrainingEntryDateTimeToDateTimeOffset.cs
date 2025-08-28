@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace OnePushUp.Data.Migrations
+namespace OneActivity.Data.Migrations
 {
     /// <inheritdoc />
     public partial class ChangeTrainingEntryDateTimeToDateTimeOffset : Migration

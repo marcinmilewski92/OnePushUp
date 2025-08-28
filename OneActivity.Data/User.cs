@@ -1,4 +1,4 @@
-namespace OnePushUp.Data;
+namespace OneActivity.Data;
 
 public class User
 {

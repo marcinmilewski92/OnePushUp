@@ -4,13 +4,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using OnePushUp.Data;
+using OneActivity.Data;
 
 #nullable disable
 
-namespace OnePushUp.Data.Migrations
+namespace OneActivity.Data.Migrations
 {
-    [DbContext(typeof(OnePushUpDbContext))]
+    [DbContext(typeof(OneActivityDbContext))]
     [Migration("20250824105501_InitialCreate")]
     partial class InitialCreate
     {
