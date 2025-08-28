@@ -21,4 +21,9 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.1" />
   </ItemGroup>
 
+  <!-- Ensure Core static web assets (wwwroot) are packaged for BlazorWebView -->
+  <ItemGroup>
+    <MauiAsset Include="wwwroot\**" LogicalName="wwwroot/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
 </Project>
