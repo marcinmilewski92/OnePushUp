@@ -108,7 +108,6 @@ article.content {
   background: linear-gradient(135deg, var(--secondary-color), var(--primary-color), var(--accent-color));
   color: var(--text-light);
   text-align: center;
-  padding: 2rem;
 }
 
 .streak-number {
