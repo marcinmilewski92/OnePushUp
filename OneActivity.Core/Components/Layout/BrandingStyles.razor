@@ -2,7 +2,7 @@
 
 <style>
 :root {
-  --brand-primary: @((!string.IsNullOrWhiteSpace(Branding.PrimaryColor) ? Branding.PrimaryColor : "#9b0000"));
+  --brand-primary: @PrimaryHex;
   --brand-secondary: @((!string.IsNullOrWhiteSpace(Branding.SecondaryColor) ? Branding.SecondaryColor : "#7a2e00"));
   --brand-accent: @((!string.IsNullOrWhiteSpace(Branding.AccentColor) ? Branding.AccentColor : "#cc5500"));
   --brand-text: #ffffff;
@@ -12,9 +12,70 @@
   --nav-btn-border: rgba(255, 255, 255, 0.4);
   --nav-btn-text: #ffffff;
 
-  /* Map brand colors to theme variables used in custom.css */
+  /* Map brand colors to theme variables used in app.css/custom.css */
   --primary-color: var(--brand-primary);
   --secondary-color: var(--brand-secondary);
   --accent-color: var(--brand-accent);
+
+  /* Bridge to Bootstrap CSS variables */
+  --bs-primary: var(--brand-primary);
+  --bs-primary-rgb: @PrimaryRgb;
+
+  /* Derived alpha variants for consistent focus rings and subtle borders */
+  --primary-color-25a: @PrimaryA25;
+  --primary-color-15a: @PrimaryA15;
+  --primary-color-10a: @PrimaryA10;
 }
 </style>
+
+@code {
+    private string PrimaryHex => !string.IsNullOrWhiteSpace(Branding.PrimaryColor) ? NormalizeHex(Branding.PrimaryColor!) : "#9b0000";
+    private string PrimaryRgb  => ToRgbList(PrimaryHex);
+    private string PrimaryA25 => ToRgba(PrimaryHex, 0.25);
+    private string PrimaryA15 => ToRgba(PrimaryHex, 0.15);
+    private string PrimaryA10 => ToRgba(PrimaryHex, 0.10);
+
+    private static string NormalizeHex(string hex)
+    {
+        hex = hex.Trim();
+        if (!hex.StartsWith("#")) hex = "#" + hex;
+        if (hex.Length == 4)
+        {
+            var r = hex[1];
+            var g = hex[2];
+            var b = hex[3];
+            hex = $"#{r}{r}{g}{g}{b}{b}";
+        }
+        return hex.Length == 7 ? hex : "#9b0000";
+    }
+
+    private static string ToRgba(string hex, double alpha)
+    {
+        try
+        {
+            var r = Convert.ToInt32(hex.Substring(1, 2), 16);
+            var g = Convert.ToInt32(hex.Substring(3, 2), 16);
+            var b = Convert.ToInt32(hex.Substring(5, 2), 16);
+            return $"rgba({r}, {g}, {b}, {alpha.ToString(System.Globalization.CultureInfo.InvariantCulture)})";
+        }
+        catch
+        {
+            return "rgba(155, 0, 0, 0.25)";
+        }
+    }
+
+    private static string ToRgbList(string hex)
+    {
+        try
+        {
+            var r = Convert.ToInt32(hex.Substring(1, 2), 16);
+            var g = Convert.ToInt32(hex.Substring(3, 2), 16);
+            var b = Convert.ToInt32(hex.Substring(5, 2), 16);
+            return $"{r}, {g}, {b}";
+        }
+        catch
+        {
+            return "155, 0, 0";
+        }
+    }
+}

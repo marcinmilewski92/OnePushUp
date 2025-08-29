@@ -214,7 +214,7 @@ article.content {
 }
 
 .btn-autumn-nav:hover, .btn-autumn-nav.active {
-  background-color: #2E8B57; /* Forest Green instead of var(--success-color) */
+  background-color: var(--primary-color);
   color: white;
 }
 
@@ -226,14 +226,18 @@ article.content {
 .form-control {
   padding: 0.75rem 1rem;
   border-radius: var(--border-radius);
-  border: 2px solid var(--gray-medium);
+  border: 2px solid var(--primary-color-15a);
   background-color: white;
   transition: border 0.3s ease, box-shadow 0.3s ease;
 }
 
+.form-control:hover {
+  border-color: var(--primary-color);
+}
+
 .form-control:focus {
-  border-color: var(--accent-color);
-  box-shadow: 0 0 0 3px rgba(255, 195, 0, 0.25);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-color-25a);
 }
 
 label {
@@ -274,9 +278,9 @@ label {
 }
 
 .pushup-option.selected {
-  background-color: var(--accent-color);
+  background-color: var(--primary-color);
   color: white;
-  border-color: var(--secondary-color);
+  border-color: var(--primary-color);
 }
 
 /* Media queries for responsive layout */
@@ -395,44 +399,61 @@ label {
 
 /* Form controls with forest green instead of default blue */
 .form-check-input:checked {
-  background-color: #2E8B57 !important;
-  border-color: #2E8B57 !important;
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+
+/* Ensure unchecked checkboxes/radios also use PrimaryColor borders */
+.form-check-input {
+  border: 2px solid var(--primary-color-15a) !important;
+}
+
+.form-check-input:hover {
+  border-color: var(--primary-color) !important;
 }
 
 /* Style for switch controls - both on and off states */
 .form-switch .form-check-input {
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba(46, 139, 87, 0.25)'/%3e%3c/svg%3e") !important;
-  background-color: rgba(46, 139, 87, 0.1) !important; /* Light forest green for off state */
-  border-color: rgba(46, 139, 87, 0.5) !important;
+  background-color: var(--primary-color-10a) !important; /* subtle off state */
+  border-color: var(--primary-color-15a) !important;
 }
 
 .form-switch .form-check-input:checked {
-  background-color: #2E8B57 !important;
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='white'/%3e%3c/svg%3e") !important;
-  border-color: #2E8B57 !important;
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
 }
 
 .form-range::-webkit-slider-thumb {
-  background-color: #2E8B57 !important;
+  background-color: var(--primary-color) !important;
 }
 
 .form-range::-moz-range-thumb {
-  background-color: #2E8B57 !important;
+  background-color: var(--primary-color) !important;
 }
 
 .form-range::-ms-thumb {
-  background-color: #2E8B57 !important;
+  background-color: var(--primary-color) !important;
 }
 
 .form-select:focus, 
 .form-control:focus {
-  border-color: #2E8B57 !important;
-  box-shadow: 0 0 0 0.25rem rgba(46, 139, 87, 0.25) !important;
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 0.25rem var(--primary-color-25a) !important;
+}
+
+/* Selects adopt PrimaryColor borders/hover */
+.form-select {
+  border: 2px solid var(--primary-color-15a);
+  border-radius: var(--border-radius);
+}
+
+.form-select:hover {
+  border-color: var(--primary-color);
 }
 
 /* Focus styles for all interactive elements */
 :focus {
-  outline-color: #2E8B57 !important;
+  outline-color: var(--primary-color) !important;
 }
 
 button:focus, 
@@ -441,7 +462,7 @@ a:focus,
 .btn:focus,
 .btn-check:focus,
 .form-range:focus {
-  box-shadow: 0 0 0 0.25rem rgba(46, 139, 87, 0.25) !important;
+  box-shadow: 0 0 0 0.25rem var(--primary-color-25a) !important;
   outline: none !important;
 }
 
@@ -453,14 +474,21 @@ a:focus,
 /* Ensure Bootstrap custom toggles use forest green */
 .btn-check:checked + .btn-outline-primary,
 .btn-check:active + .btn-outline-primary {
-  background-color: #2E8B57 !important;
-  border-color: #2E8B57 !important;
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
   color: white !important;
 }
 
 /* For any custom radio button options in your pushup component */
 .pushup-option.selected {
-  background-color: #2E8B57 !important;
+  background-color: var(--primary-color) !important;
   color: white;
-  border-color: #2E8B57 !important;
+  border-color: var(--primary-color) !important;
+}
+
+/* Dropdown active highlight to primary */
+.dropdown-item.active,
+.dropdown-item:active {
+  background-color: var(--primary-color) !important;
+  color: #fff !important;
 }

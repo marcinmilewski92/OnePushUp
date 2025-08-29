@@ -137,8 +137,8 @@ article.content {
 }
 
 .btn-autumn-nav:hover, .btn-autumn-nav.active {
-  background-color: rgba(255, 255, 255, 0.3);
-  color: white;
+  background-color: var(--primary-color);
+  color: #fff;
 }
 
 .btn-autumn-nav i {
@@ -174,6 +174,77 @@ article.content {
   background: linear-gradient(135deg, var(--secondary-color), var(--primary-color), var(--accent-color));
   color: var(--text-light);
   text-align: center;
+}
+
+/* Forms: unify borders, focus, and hover to PrimaryColor */
+.form-control {
+  padding: 0.75rem 1rem;
+  border-radius: var(--border-radius);
+  border: 2px solid var(--primary-color-15a);
+  background-color: #fff;
+  transition: border 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-control:hover {
+  border-color: var(--primary-color);
+}
+
+.form-control:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.25rem var(--primary-color-25a);
+}
+
+.form-select {
+  border: 2px solid var(--primary-color-15a);
+  border-radius: var(--border-radius);
+}
+
+.form-select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.25rem var(--primary-color-25a);
+}
+
+/* Radio/checkbox unchecked & checked to PrimaryColor (including browsers using accent-color) */
+.form-check-input {
+  border: 2px solid var(--primary-color-15a) !important;
+  accent-color: var(--primary-color) !important;
+}
+
+/* Boost specificity for any radio/checkbox in form-check container */
+.form-check .form-check-input,
+input[type="radio"].form-check-input,
+input[type="checkbox"].form-check-input {
+  border: 2px solid var(--primary-color-15a) !important;
+  accent-color: var(--primary-color) !important;
+}
+
+.form-check-input:hover {
+  border-color: var(--primary-color) !important;
+}
+
+.form-check-input:focus {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 0.25rem var(--primary-color-25a) !important;
+}
+
+.form-check-input:checked {
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+
+/* Toggles and button-check radios */
+.btn-check:checked + .btn-outline-primary,
+.btn-check:active + .btn-outline-primary {
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  color: #fff !important;
+}
+
+/* Dropdown highlight */
+.dropdown-item.active,
+.dropdown-item:active {
+  background-color: var(--primary-color) !important;
+  color: #fff !important;
 }
 
 .streak-number {
