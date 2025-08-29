@@ -17,4 +17,10 @@
     <ProjectReference Include="..\\OneActivity.Data\\OneActivity.Data.csproj" />
     <ProjectReference Include="..\\OneActivity.Core\\OneActivity.Core.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <MauiAsset Include="Resources\splash.svg">
+      <LogicalName>wwwroot/splash.svg</LogicalName>
+    </MauiAsset>
+    <MauiSplashScreen Include="Resources\splash.svg" Color="#ffc009" BaseSize="128,128" />
+  </ItemGroup>
 </Project>
