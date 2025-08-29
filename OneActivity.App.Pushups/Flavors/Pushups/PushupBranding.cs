@@ -11,4 +11,3 @@ public class PushupBranding : IActivityBranding
     public string? SecondaryColor => "#9b0000";
     public string? AccentColor => "#ffc300";
 }
-

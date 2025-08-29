@@ -11,4 +11,3 @@ public class ReadingBranding : IActivityBranding
     public string? SecondaryColor => "#1565c0";
     public string? AccentColor => "#fbc02d";
 }
-
