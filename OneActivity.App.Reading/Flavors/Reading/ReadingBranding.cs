@@ -7,7 +7,7 @@ public class ReadingBranding : IActivityBranding
     public string AppDisplayName => "OneReading";
     public string LogoPath => "/FrotkaReading.svg";
     public string SplashPath => "/FrotkaReading.svg";
-    public string? PrimaryColor => "#ff0000";
-    public string? SecondaryColor => "#ff0000";
-    public string? AccentColor => "#fdb127";
+    public string? PrimaryColor => "#cc5500";
+    public string? SecondaryColor => "#9b0000";
+    public string? AccentColor => "#ffc300";
 }
