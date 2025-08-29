@@ -23,7 +23,11 @@ public static class OneActivityHostExtensions
         builder.Services.AddDbContext<OneActivityDbContext>(options =>
         {
             var path = dbPathFactory?.Invoke() ?? Path.Combine(FileSystem.AppDataDirectory, "OnePushUp.db");
-            options.UseSqlite($"Data Source={path}");
+            // Specify migrations assembly explicitly to avoid trimming issues on Android
+            options.UseSqlite(
+                $"Data Source={path}",
+                b => b.MigrationsAssembly(typeof(OneActivityDbContext).Assembly.FullName)
+            );
         });
         builder.Services.AddTransient<IUsersRepository, UsersRepository>();
         builder.Services.AddTransient<IActivityEntryRepository, ActivityEntryRepository>();

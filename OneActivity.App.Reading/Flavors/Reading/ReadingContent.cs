@@ -4,11 +4,11 @@ namespace OneActivity.App.Reading.Flavors.Reading;
 
 public class ReadingContent : IActivityContent
 {
-    public string AppName => "OneReading";
+    public string AppName => "OnePage";
     public string UnitSingular => "page";
     public string UnitPlural => "pages";
     public string Verb => "read";
-    public int MinimalQuantity => 3;
+    public int MinimalQuantity => 1;
 
     public string FormatQuantity(int quantity)
     {
