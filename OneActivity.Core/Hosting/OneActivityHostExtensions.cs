@@ -8,8 +8,8 @@ using OneActivity.Core.Platforms.Android;
 using OneActivity.Core.Platforms.Apple;
 #endif
 using OneActivity.Data;
-using OnePushUp.Repositories;
-using OnePushUp.Services;
+using OneActivity.Core.Repositories;
+using OneActivity.Core.Services;
 
 namespace OneActivity.Core.Hosting;
 

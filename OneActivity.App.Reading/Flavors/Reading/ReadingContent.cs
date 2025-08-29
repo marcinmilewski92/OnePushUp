@@ -1,4 +1,4 @@
-using OnePushUp.Services;
+using OneActivity.Core.Services;
 
 namespace OneActivity.App.Reading.Flavors.Reading;
 
@@ -35,4 +35,3 @@ public class ReadingContent : IActivityContent
         ? "We've recorded your response. Even a few pages help build the habit!"
         : "Nice! Your reading has been recorded.";
 }
-

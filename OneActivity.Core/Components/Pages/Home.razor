@@ -1,5 +1,5 @@
 @page "/"
-@using OnePushUp.Components.HomeComponents
+@using OneActivity.Core.Components.HomeComponents
 
 @if (CurrentUser == null)
 {
@@ -9,4 +9,3 @@ else
 {
     <DailyActivity CurrentUser="CurrentUser" OnEntryAdded="HandleEntryAdded" />
 }
-

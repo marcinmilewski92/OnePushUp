@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
 using OneActivity.Data;
-using OnePushUp.Models.Dtos;
+using OneActivity.Core.Models.Dtos;
 
-namespace OnePushUp.Components.SettingsComponents;
+namespace OneActivity.Core.Components.SettingsComponents;
 
 public partial class EditNickname
 {
@@ -114,4 +114,3 @@ public partial class EditNickname
         }
     }
 }
-

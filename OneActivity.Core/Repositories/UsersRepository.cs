@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using OneActivity.Data;
 
-namespace OnePushUp.Repositories;
+namespace OneActivity.Core.Repositories;
 
 public class UsersRepository : IUsersRepository
 {

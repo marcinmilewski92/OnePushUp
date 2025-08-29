@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Components;
-using OnePushUp.Services;
+using OneActivity.Core.Services;
 
-namespace OnePushUp.Components.Layout;
+namespace OneActivity.Core.Components.Layout;
 
 public partial class MainLayout : IDisposable
 {
@@ -43,4 +43,3 @@ public partial class MainLayout : IDisposable
         _timer?.Dispose();
     }
 }
-

@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Components;
 using OneActivity.Data;
-using OnePushUp.Services;
-using OnePushUp.Components.HomeComponents;
+using OneActivity.Core.Services;
+using OneActivity.Core.Components.HomeComponents;
 
-namespace OnePushUp.Components.Pages;
+namespace OneActivity.Core.Components.Pages;
 
 public partial class Stats : ComponentBase
 {
@@ -24,4 +24,3 @@ public partial class Stats : ComponentBase
         StateHasChanged();
     }
 }
-

@@ -1,8 +1,8 @@
 using OneActivity.Data;
-using OnePushUp.Models.Dtos;
-using OnePushUp.Repositories;
+using OneActivity.Core.Models.Dtos;
+using OneActivity.Core.Repositories;
 
-namespace OnePushUp.Services;
+namespace OneActivity.Core.Services;
 
 public class ActivityService
 {
@@ -78,4 +78,3 @@ public class ActivityService
         };
     }
 }
-

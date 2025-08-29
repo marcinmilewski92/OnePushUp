@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
-using OnePushUp.Services;
+using OneActivity.Core.Services;
 using System.Globalization;
 
-namespace OnePushUp.Components.SettingsComponents;
+namespace OneActivity.Core.Components.SettingsComponents;
 
 public partial class NotificationSettings
 {
@@ -162,4 +162,3 @@ public partial class NotificationSettings
         return false;
     }
 }
-

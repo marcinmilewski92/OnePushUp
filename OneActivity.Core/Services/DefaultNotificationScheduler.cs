@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 
-namespace OnePushUp.Services;
+namespace OneActivity.Core.Services;
 
 public class DefaultNotificationScheduler : INotificationScheduler
 {
@@ -29,4 +29,3 @@ public class DefaultNotificationScheduler : INotificationScheduler
         return Task.CompletedTask;
     }
 }
-

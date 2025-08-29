@@ -4,7 +4,7 @@ using Android.Content;
 using Android.OS;
 using AndroidX.Core.App;
 using Microsoft.Extensions.Logging;
-using OnePushUp.Services;
+using OneActivity.Core.Services;
 
 namespace OneActivity.Core.Platforms.Android;
 
@@ -118,4 +118,3 @@ public class NotificationDisplayer : INotificationDisplayer
     }
 }
 #endif
-

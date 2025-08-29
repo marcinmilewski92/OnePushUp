@@ -1,6 +1,6 @@
 using OneActivity.Data;
 
-namespace OnePushUp.Repositories;
+namespace OneActivity.Core.Repositories;
 
 public interface IActivityEntryRepository
 {
@@ -15,4 +15,3 @@ public interface IActivityEntryRepository
     Task<int> GetTotalQuantityAsync(Guid userId);
     Task<bool> DeleteEntryForTodayAsync(Guid userId);
 }
-

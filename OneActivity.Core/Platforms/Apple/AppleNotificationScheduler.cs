@@ -1,6 +1,6 @@
 #if IOS || MACCATALYST
 using Microsoft.Extensions.Logging;
-using OnePushUp.Services;
+using OneActivity.Core.Services;
 using UserNotifications;
 using Foundation;
 

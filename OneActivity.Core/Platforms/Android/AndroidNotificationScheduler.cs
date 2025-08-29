@@ -4,7 +4,7 @@ using Android.Content;
 using Android.OS;
 using AndroidX.Core.App;
 using Microsoft.Extensions.Logging;
-using OnePushUp.Services;
+using OneActivity.Core.Services;
 using Preferences = Microsoft.Maui.Storage.Preferences;
 using AndroidApp = Android.App.Application;
 
@@ -164,4 +164,3 @@ public class AndroidNotificationScheduler : INotificationScheduler
     }
 }
 #endif
-

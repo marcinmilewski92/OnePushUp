@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using OneActivity.Data;
 using Microsoft.Data.Sqlite;
 
-namespace OnePushUp.Services;
+namespace OneActivity.Core.Services;
 
 public class DbInitializer
 {

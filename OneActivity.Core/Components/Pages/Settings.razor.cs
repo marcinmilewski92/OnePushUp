@@ -1,6 +1,6 @@
 using OneActivity.Data;
 
-namespace OnePushUp.Components.Pages;
+namespace OneActivity.Core.Components.Pages;
 
 public partial class Settings
 {
@@ -18,4 +18,3 @@ public partial class Settings
         CurrentUser = await UserService.GetCurrentUserAsync();
     }
 }
-

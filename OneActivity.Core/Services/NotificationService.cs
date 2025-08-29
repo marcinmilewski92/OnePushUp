@@ -1,9 +1,9 @@
 using Microsoft.Extensions.Logging;
 using System.Globalization;
-using OnePushUp.Models;
+using OneActivity.Core.Models;
 using Preferences = Microsoft.Maui.Storage.Preferences;
 
-namespace OnePushUp.Services;
+namespace OneActivity.Core.Services;
 
 public class NotificationService
 {
@@ -123,4 +123,3 @@ public class NotificationService
         await _scheduler.SendTestAsync();
     }
 }
-

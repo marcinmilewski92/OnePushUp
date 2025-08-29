@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Components;
 using OneActivity.Data;
-using OnePushUp.Services;
+using OneActivity.Core.Services;
 
-namespace OnePushUp.Components.Pages;
+namespace OneActivity.Core.Components.Pages;
 
 public partial class Home : ComponentBase
 {
@@ -27,4 +27,3 @@ public partial class Home : ComponentBase
         StateHasChanged();
     }
 }
-

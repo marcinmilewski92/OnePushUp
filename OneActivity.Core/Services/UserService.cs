@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using OneActivity.Data;
-using OnePushUp.Models.Dtos;
+using OneActivity.Core.Models.Dtos;
 
-namespace OnePushUp.Services;
+namespace OneActivity.Core.Services;
 
 public class UserService
 {

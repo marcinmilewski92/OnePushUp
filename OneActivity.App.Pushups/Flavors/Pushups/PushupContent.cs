@@ -1,5 +1,5 @@
 using System.Globalization;
-using OnePushUp.Services;
+using OneActivity.Core.Services;
 
 namespace OneActivity.App.Pushups.Flavors.Pushups;
 
@@ -37,4 +37,3 @@ public class PushupContent : IActivityContent
         ? "We've recorded your response. Remember, even one pushup is better than none!"
         : "Great job! Your pushup has been recorded.";
 }
-

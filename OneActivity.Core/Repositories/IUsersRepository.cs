@@ -1,6 +1,6 @@
 using OneActivity.Data;
 
-namespace OnePushUp.Repositories;
+namespace OneActivity.Core.Repositories;
 
 public interface IUsersRepository
 {
@@ -8,4 +8,3 @@ public interface IUsersRepository
     Task<User?> GetAsync();
     Task<bool> UpdateAsync(User user);
 }
-

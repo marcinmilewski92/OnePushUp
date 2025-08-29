@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Components;
-using OnePushUp.Services;
+using OneActivity.Core.Services;
 
-namespace OnePushUp.Components.HomeComponents;
+namespace OneActivity.Core.Components.HomeComponents;
 
 public partial class CreateUser : ComponentBase
 {
@@ -51,4 +51,3 @@ public partial class CreateUser : ComponentBase
         }
     }
 }
-

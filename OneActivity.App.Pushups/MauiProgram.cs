@@ -2,8 +2,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Maui.Storage;
 using OneActivity.Data;
-using OnePushUp.Repositories;
-using OnePushUp.Services;
+using OneActivity.Core.Repositories;
+using OneActivity.Core.Services;
 using OneActivity.App.Pushups.Flavors.Pushups;
 using OneActivity.Core.Hosting;
 #if ANDROID

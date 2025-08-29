@@ -1,4 +1,4 @@
-namespace OnePushUp.Services;
+namespace OneActivity.Core.Services;
 
 public interface IActivityBranding
 {
@@ -11,4 +11,3 @@ public interface IActivityBranding
     string? SecondaryColor { get; }
     string? AccentColor { get; }
 }
-

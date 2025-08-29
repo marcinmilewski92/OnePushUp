@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
 using OneActivity.Data;
-using OnePushUp.Models.Dtos;
-using OnePushUp.Services;
+using OneActivity.Core.Models.Dtos;
+using OneActivity.Core.Services;
 
-namespace OnePushUp.Components.HomeComponents;
+namespace OneActivity.Core.Components.HomeComponents;
 
 public partial class Streak
 {
@@ -73,4 +73,3 @@ public partial class Streak
         return "text-muted"; // Gray for no streak
     }
 }
-

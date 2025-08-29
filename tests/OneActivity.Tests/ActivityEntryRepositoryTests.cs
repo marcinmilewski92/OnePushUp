@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using OneActivity.Data;
-using OnePushUp.Repositories;
+using OneActivity.Core.Repositories;
 using Xunit;
 
 namespace OneActivity.Tests;
@@ -43,4 +43,3 @@ public class ActivityEntryRepositoryTests
         Assert.True(hasToday);
     }
 }
-

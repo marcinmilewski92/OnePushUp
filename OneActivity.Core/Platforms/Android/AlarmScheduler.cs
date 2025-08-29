@@ -3,7 +3,7 @@ using Android.App;
 using Android.Content;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.Storage;
-using OnePushUp.Services;
+using OneActivity.Core.Services;
 
 namespace OneActivity.Core.Platforms.Android;
 
@@ -95,4 +95,3 @@ public class AlarmScheduler : IAlarmScheduler
     }
 }
 #endif
-

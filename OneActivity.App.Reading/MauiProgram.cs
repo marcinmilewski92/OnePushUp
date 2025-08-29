@@ -1,9 +1,5 @@
 using Microsoft.Extensions.Logging;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Maui.Storage;
-using OneActivity.Data;
-using OnePushUp.Repositories;
-using OnePushUp.Services;
+using OneActivity.Core.Services;
 using OneActivity.App.Reading.Flavors.Reading;
 #if ANDROID
 using OneActivity.Core.Platforms.Android;
@@ -20,7 +16,7 @@ public static class MauiProgram
             .UseMauiApp<App>()
             .ConfigureFonts(fonts => { fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular"); });
 
-        OneActivity.Core.Hosting.OneActivityHostExtensions.UseOneActivityCore(builder, () => Path.Combine(FileSystem.AppDataDirectory, "OneBookPage.db"));
+        OneActivity.Core.Hosting.OneActivityHostExtensions.UseOneActivityCore(builder, () => Path.Combine(FileSystem.AppDataDirectory, "OnePushUp.db"));
 
         
         builder.Services.AddSingleton<IActivityContent, ReadingContent>();

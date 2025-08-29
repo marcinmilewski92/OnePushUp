@@ -1,4 +1,4 @@
-using OnePushUp.Services;
+using OneActivity.Core.Services;
 
 namespace OneActivity.App.Pushups.Flavors.Pushups;
 

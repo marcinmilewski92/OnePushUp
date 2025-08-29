@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <UseMaui>true</UseMaui>
     <EnableDefaultCssItems>false</EnableDefaultCssItems>
-    <RootNamespace>OnePushUp</RootNamespace>
+    <RootNamespace>OneActivity.Core</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,4 +1,4 @@
-namespace OnePushUp.Services;
+namespace OneActivity.Core.Services;
 
 public interface IActivityContent
 {
@@ -21,4 +21,3 @@ public interface IActivityContent
     string UpdateSuccessMessage(bool isZero);
     string SaveSuccessMessage(bool isZero);
 }
-

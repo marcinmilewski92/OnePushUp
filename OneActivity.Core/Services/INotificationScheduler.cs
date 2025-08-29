@@ -1,4 +1,4 @@
-namespace OnePushUp.Services;
+namespace OneActivity.Core.Services;
 
 public interface INotificationScheduler
 {
@@ -6,4 +6,3 @@ public interface INotificationScheduler
     Task CancelAsync();
     Task SendTestAsync();
 }
-

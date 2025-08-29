@@ -1,6 +1,6 @@
 using System;
 
-namespace OnePushUp.Models.Dtos;
+namespace OneActivity.Core.Models.Dtos;
 
 public class StreakDataDto
 {
@@ -17,4 +17,3 @@ public class StreakDataDto
         _ => "Start your streak today!",
     };
 }
-

@@ -1,6 +1,6 @@
 using System;
 
-namespace OnePushUp.Models.Dtos;
+namespace OneActivity.Core.Models.Dtos;
 
 public class ActivityEntryDto
 {
@@ -11,4 +11,3 @@ public class ActivityEntryDto
 
     public string FormattedDate => DateTime.ToLocalTime().ToString("MMM dd, yyyy - h:mm tt");
 }
-
