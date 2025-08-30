@@ -1,10 +1,16 @@
 using OneActivity.Core.Services;
+using OneActivity.Data;
 
 namespace OneActivity.App.Reading.Flavors.Reading;
 
 public class ReadingContent : IActivityContent
 {
-    public string AppName => "OnePage";
+    private User? _user;
+    public void SetUser(User user)
+    {
+        _user = user;
+    }
+    public string AppName => "OneBookPage";
     public string UnitSingular => "page";
     public string UnitPlural => "pages";
     public string Verb => "read";

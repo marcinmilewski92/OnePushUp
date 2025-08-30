@@ -8,7 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <EnableDefaultCssItems>false</EnableDefaultCssItems>
     <Nullable>enable</Nullable>
-    <ApplicationTitle>OneReading</ApplicationTitle>
+    <ApplicationTitle>OneBookPage</ApplicationTitle>
     <ApplicationId>com.company.oneactivity.reading</ApplicationId>
     <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
     <ApplicationVersion>1</ApplicationVersion>
@@ -16,5 +16,12 @@
   <ItemGroup>
     <ProjectReference Include="..\\OneActivity.Data\\OneActivity.Data.csproj" />
     <ProjectReference Include="..\\OneActivity.Core\\OneActivity.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <MauiAsset Include="Resources\splash.svg">
+      <LogicalName>wwwroot/splash.svg</LogicalName>
+    </MauiAsset>
+    <MauiSplashScreen Include="Resources\splash.svg" Color="#fda206" BaseSize="128,128" />
+    <MauiIcon Include="Resources\AppIcon\appicon.svg" />
   </ItemGroup>
 </Project>

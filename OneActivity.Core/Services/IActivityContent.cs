@@ -1,7 +1,10 @@
+using OneActivity.Data;
+
 namespace OneActivity.Core.Services;
 
 public interface IActivityContent
 {
+    public void SetUser(User user);
     string AppName { get; }
     string UnitSingular { get; }
     string UnitPlural { get; }

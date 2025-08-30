@@ -22,5 +22,6 @@
       <LogicalName>wwwroot/splash.svg</LogicalName>
     </MauiAsset>
     <MauiSplashScreen Include="Resources\splash.svg" Color="#ffc009" BaseSize="128,128" />
+    <MauiIcon Include="Resources\Appicon\appicon.svg" />
   </ItemGroup>
 </Project>

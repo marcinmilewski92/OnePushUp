@@ -43,6 +43,7 @@ public partial class DailyActivity
     
     protected override async Task OnInitializedAsync()
     {
+        Content.SetUser(CurrentUser);
         _repetitions = Math.Max(Content.MinimalQuantity + 1, 2);
         await CheckTodayStatus();
     }
