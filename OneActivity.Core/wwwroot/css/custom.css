@@ -290,3 +290,35 @@ input[type="checkbox"].form-check-input {
 footer {
   height: 60px;
 }
+
+/* Confetti overlay */
+.confetti-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 2000;
+}
+
+.confetti {
+  position: absolute;
+  top: -12px;
+  opacity: 0.95;
+  border-radius: 2px;
+  transform: translateY(-12px) rotate(0deg);
+  animation-name: confetti-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: 1;
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-12px) rotate(0deg);
+  }
+  100% {
+    transform: translateY(110vh) rotate(360deg);
+  }
+}

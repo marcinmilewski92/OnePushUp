@@ -145,6 +145,24 @@
                 @_message
             </div>
         }
+
+        @* Confetti overlay when a non-zero entry is saved *@
+        @if (_showConfetti)
+        {
+            <div class="confetti-overlay">
+                @{
+                    var rnd = new Random();
+                    for (var i = 0; i < 80; i++)
+                    {
+                        var left = rnd.Next(0, 100);
+                        var size = rnd.Next(6, 12);
+                        var duration = rnd.Next(1200, 2400);
+                        var delay = rnd.Next(0, 300);
+                        var color = ConfettiColors[rnd.Next(ConfettiColors.Length)];
+                <span class="confetti" style="left:@($"{left}vw"); width:@($"{size}px"); height:@($"{size}px"); background:@color; animation-duration:@($"{duration}ms"); animation-delay:@($"{delay}ms");"></span>
+                    }
+                }
+            </div>
+        }
     </div>
 </div>
-

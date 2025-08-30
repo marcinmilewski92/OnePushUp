@@ -40,6 +40,12 @@ public partial class DailyActivity
     private bool _repetitionError;
     private ActivityEntryDto? _lastEntry;
     private int _minMoreQuantity => Math.Max(Content.MinimalQuantity + 1, Content.MinimalQuantity == int.MaxValue ? int.MaxValue : Content.MinimalQuantity + 1);
+    private bool _showConfetti;
+    private static readonly string[] ConfettiColors = new[]
+    {
+        "#e74c3c", "#f1c40f", "#2ecc71", "#3498db", "#9b59b6", "#e67e22",
+        "#1abc9c", "#ff6b6b", "#ffd166", "#06d6a0", "#118ab2", "#ef476f"
+    };
     
     protected override async Task OnInitializedAsync()
     {
@@ -171,6 +177,7 @@ public partial class DailyActivity
             }
 
             // Update the existing entry
+            var oldQuantity = _lastEntry.Quantity;
             bool success = await ActivityService.UpdateEntryAsync(_lastEntry.Id, repetitions);
             
             if (success)
@@ -185,6 +192,12 @@ public partial class DailyActivity
                 _isEditing = false; // Exit edit mode
                 
                 await OnEntryAdded.InvokeAsync(); // Refresh streak data
+
+                // Celebrate only when quantity increased
+                if (repetitions > oldQuantity)
+                {
+                    _ = ShowConfettiAsync();
+                }
             }
             else
             {
@@ -231,6 +244,12 @@ public partial class DailyActivity
             _hasCompletedToday = true;
             
             await OnEntryAdded.InvokeAsync();
+
+            // Celebrate non-zero saves
+            if (repetitions > 0)
+            {
+                _ = ShowConfettiAsync();
+            }
         }
         catch (Exception ex)
         {
@@ -241,6 +260,21 @@ public partial class DailyActivity
         finally
         {
             _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ShowConfettiAsync()
+    {
+        try
+        {
+            _showConfetti = true;
+            StateHasChanged();
+            await Task.Delay(3000);
+        }
+        finally
+        {
+            _showConfetti = false;
             StateHasChanged();
         }
     }
