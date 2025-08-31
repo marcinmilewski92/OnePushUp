@@ -95,6 +95,7 @@ public class DbInitializer
                         MarkApplied("20250824105501_InitialCreate", ver);
                         MarkApplied("20250901000000_ChangeTrainingEntryDateTimeToDateTimeOffset", ver);
                         MarkApplied("20250902000000_RenameTrainingToActivity", ver);
+                        MarkApplied("20250903000000_AddGenderToUser", ver);
                         _logger.LogInformation("Marked all known migrations as applied (ActivityEntries present).");
                     }
 
