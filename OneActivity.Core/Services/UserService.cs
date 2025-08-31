@@ -7,10 +7,12 @@ namespace OneActivity.Core.Services;
 public class UserService
 {
     private readonly OneActivityDbContext _dbContext;
+    private readonly IGenderService _genderService;
 
-    public UserService(OneActivityDbContext dbContext)
+    public UserService(OneActivityDbContext dbContext, IGenderService genderService)
     {
         _dbContext = dbContext;
+        _genderService = genderService;
     }
 
     public async Task<User?> GetCurrentUserAsync()
@@ -23,7 +25,8 @@ public class UserService
         var user = new User
         {
             Id = Guid.NewGuid(),
-            NickName = nickName
+            NickName = nickName,
+            Gender = (int)_genderService.Current
         };
 
         _dbContext.Users.Add(user);
@@ -37,6 +40,19 @@ public class UserService
         if (user == null) return false;
 
         user.NickName = userDto.NickName;
+        if (userDto is { Gender: not null })
+        {
+            user.Gender = (int)userDto.Gender.Value;
+        }
+        await _dbContext.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> UpdateGenderAsync(Guid userId, Gender gender)
+    {
+        var user = await _dbContext.Users.FindAsync(userId);
+        if (user == null) return false;
+        user.Gender = (int)gender;
         await _dbContext.SaveChangesAsync();
         return true;
     }

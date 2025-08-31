@@ -26,8 +26,14 @@ public static class MauiProgram
 
         builder.UseOneActivityCore(() => Path.Combine(FileSystem.AppDataDirectory, "OnePushUp.db"));
 
-        
-        builder.Services.AddSingleton<IActivityContent, PushupContent>();
+        // Language-aware content providers
+        builder.Services.AddSingleton<PushupContentEn>();
+        builder.Services.AddSingleton<PushupContentPl>();
+        builder.Services.AddSingleton<IActivityContent, PushupContentLocalized>();
+        // Shared content providers (Settings)
+        builder.Services.AddSingleton<SharedContentEn>();
+        builder.Services.AddSingleton<SharedContentPl>();
+        builder.Services.AddSingleton<ISharedContent, SharedContentLocalized>();
         builder.Services.AddSingleton<IActivityBranding, PushupBranding>();
         #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();

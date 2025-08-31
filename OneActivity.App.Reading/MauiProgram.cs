@@ -18,8 +18,14 @@ public static class MauiProgram
 
         OneActivity.Core.Hosting.OneActivityHostExtensions.UseOneActivityCore(builder, () => Path.Combine(FileSystem.AppDataDirectory, "OnePushUp.db"));
 
-        
-        builder.Services.AddSingleton<IActivityContent, ReadingContent>();
+        // Language-aware content providers
+        builder.Services.AddSingleton<ReadingContentEn>();
+        builder.Services.AddSingleton<ReadingContentPl>();
+        builder.Services.AddSingleton<IActivityContent, ReadingContentLocalized>();
+        // Shared content providers (Settings)
+        builder.Services.AddSingleton<SharedContentEn>();
+        builder.Services.AddSingleton<SharedContentPl>();
+        builder.Services.AddSingleton<ISharedContent, SharedContentLocalized>();
         builder.Services.AddSingleton<IActivityBranding, ReadingBranding>();
         #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();

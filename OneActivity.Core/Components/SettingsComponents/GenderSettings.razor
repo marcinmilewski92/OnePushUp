@@ -1,0 +1,67 @@
+@using OneActivity.Core.Services
+@inject IGenderService Gender
+@inject ISharedContent Shared
+@inject UserService UserService
+
+<div class="card mt-3">
+    <div class="card-header">
+        <h3>@Shared.GenderCardTitle</h3>
+    </div>
+    <div class="card-body">
+        <div class="mb-2">
+            <label for="gender-select" class="form-label">@Shared.GenderChooseLabel</label>
+            <select id="gender-select" class="form-select" @bind="Selected">
+                <option value="Unspecified">@Shared.GenderUnspecified</option>
+                <option value="Male">@Shared.GenderMale</option>
+                <option value="Female">@Shared.GenderFemale</option>
+            </select>
+        </div>
+        <div class="small text-muted">
+            @Shared.CurrentPrefix @Gender.Current
+        </div>
+    </div>
+</div>
+
+@code {
+    private string _selected = "Unspecified";
+    private OneActivity.Data.User? _currentUser;
+    private string Selected
+    {
+        get => _selected;
+        set
+        {
+            _selected = value;
+            if (Enum.TryParse<Gender>(_selected, out var g))
+            {
+                Gender.Set(g);
+                if (_currentUser != null)
+                {
+                    _ = UserService.UpdateGenderAsync(_currentUser.Id, g);
+                }
+                StateHasChanged();
+            }
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        _selected = Gender.Current.ToString();
+        _ = LoadUserAsync();
+    }
+
+    private async Task LoadUserAsync()
+    {
+        _currentUser = await UserService.GetCurrentUserAsync();
+        if (_currentUser != null)
+        {
+            // Sync from DB if set
+            if (_currentUser.Gender is >= 0 and <= 2)
+            {
+                var g = (Gender)_currentUser.Gender;
+                _selected = g.ToString();
+                Gender.Set(g);
+                StateHasChanged();
+            }
+        }
+    }
+}

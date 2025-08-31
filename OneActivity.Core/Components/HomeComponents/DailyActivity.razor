@@ -5,7 +5,7 @@
     <div class="card-body">
         @if (_isLoading)
         {
-            <p>Loading...</p>
+            <p>@Content.LoadingText</p>
         }
         else if (_hasCompletedToday && !_isEditing)
         {
@@ -23,7 +23,7 @@
                 
                 <div class="mt-2">
                     <button class="btn btn-outline-success" style="color: #2E8B57; border-color: #2E8B57;" @onclick="EnableEditMode">
-                        <i class="bi bi-pencil"></i> Edit Today's Entry
+                        <i class="bi bi-pencil"></i> @Content.EditButtonText
                     </button>
                 </div>
             </div>
@@ -39,19 +39,19 @@
                         <div class="form-check">
                             <InputRadio class="form-check-input" Value="@ActivityOption.Yes" id="edit-option-yes" />
                             <label class="form-check-label" for="edit-option-yes">
-                                Yes, I did @Content.FormatQuantity(Content.MinimalQuantity)
+                                @Content.EditOptionYesLabel
                             </label>
                         </div>
                         <div class="form-check">
                             <InputRadio class="form-check-input" Value="@ActivityOption.YesMore" id="edit-option-more" />
                             <label class="form-check-label" for="edit-option-more">
-                                Yes, I did more than that
+                                @Content.EditOptionYesMoreLabel
                             </label>
                         </div>
                         <div class="form-check">
                             <InputRadio class="form-check-input" Value="@ActivityOption.No" id="edit-option-no" />
                             <label class="form-check-label" for="edit-option-no">
-                                No, I didn't @Content.Verb any
+                                @Content.EditOptionNoLabel
                             </label>
                         </div>
                     </InputRadioGroup>
@@ -60,11 +60,11 @@
                 @if (_selectedOption == ActivityOption.YesMore)
                 {
                     <div class="mb-3">
-                        <label for="edit-repetitions" class="form-label">How many @Content.UnitPlural did you @Content.Verb?</label>
+                        <label for="edit-repetitions" class="form-label">@Content.HowManyLabel</label>
                         <InputNumber class="form-control" id="edit-repetitions" @bind-Value="_repetitions" min="@(_minMoreQuantity)" />
                         @if (_repetitionError)
                         {
-                            <div class="text-danger mt-1">Please enter a valid number (minimum @_minMoreQuantity)</div>
+                            <div class="text-danger mt-1">@Content.GetPleaseEnterValidNumberText(_minMoreQuantity)</div>
                         }
                     </div>
                 }
@@ -73,15 +73,15 @@
                     <button type="submit" class="btn btn-primary me-2" disabled="@_isSaving">
                         @if (_isSaving)
                         {
-                            <span>Saving...</span>
+                            <span>@Content.SavingText</span>
                         }
                         else
                         {
-                            <span>Update</span>
+                            <span>@Content.UpdateText</span>
                         }
                     </button>
                     <button type="button" class="btn btn-outline-secondary" @onclick="CancelEdit">
-                        Cancel
+                        @Content.CancelText
                     </button>
                 </div>
             </EditForm>
@@ -96,19 +96,19 @@
                         <div class="form-check">
                             <InputRadio class="form-check-input" Value="@ActivityOption.Yes" id="option-yes" />
                             <label class="form-check-label" for="option-yes">
-                                Yes
+                                @Content.YesText
                             </label>
                         </div>
                         <div class="form-check">
                             <InputRadio class="form-check-input" Value="@ActivityOption.YesMore" id="option-more" />
                             <label class="form-check-label" for="option-more">
-                                Yes, I did even more
+                                @Content.YesMoreText
                             </label>
                         </div>
                         <div class="form-check">
                             <InputRadio class="form-check-input" Value="@ActivityOption.No" id="option-no" />
                             <label class="form-check-label" for="option-no">
-                                No
+                                @Content.NoText
                             </label>
                         </div>
                     </InputRadioGroup>
@@ -117,11 +117,11 @@
                 @if (_selectedOption == ActivityOption.YesMore)
                 {
                     <div class="mb-3">
-                        <label for="repetitions" class="form-label">How many @Content.UnitPlural did you @Content.Verb?</label>
+                        <label for="repetitions" class="form-label">@Content.HowManyLabel</label>
                         <InputNumber class="form-control" id="repetitions" @bind-Value="_repetitions" min="@(_minMoreQuantity)" />
                         @if (_repetitionError)
                         {
-                            <div class="text-danger mt-1">Please enter a valid number (minimum @_minMoreQuantity)</div>
+                            <div class="text-danger mt-1">@Content.GetPleaseEnterValidNumberText(_minMoreQuantity)</div>
                         }
                     </div>
                 }
@@ -129,11 +129,11 @@
                 <button type="submit" class="btn btn-primary" disabled="@_isSaving">
                     @if (_isSaving)
                     {
-                        <span>Saving...</span>
+                        <span>@Content.SavingText</span>
                     }
                     else
                     {
-                        <span>Save</span>
+                        <span>@Content.SaveText</span>
                     }
                 </button>
             </EditForm>

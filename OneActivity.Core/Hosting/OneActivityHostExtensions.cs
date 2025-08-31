@@ -37,6 +37,8 @@ public static class OneActivityHostExtensions
         builder.Services.AddTransient<UserService>();
         builder.Services.AddTransient<NotificationService>();
         builder.Services.AddSingleton<DbInitializer>();
+        builder.Services.AddSingleton<ILanguageService, LanguageService>();
+        builder.Services.AddSingleton<IGenderService, GenderService>();
 
         // Platform schedulers
 #if ANDROID

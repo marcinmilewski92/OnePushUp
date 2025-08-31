@@ -85,7 +85,7 @@ public partial class DailyActivity
         {
             Logger.LogError(ex, "Error checking today's status");
             _isError = true;
-            _message = "Error checking your status for today.";
+            _message = Content.ErrorCheckingStatus;
         }
         finally
         {
@@ -144,7 +144,7 @@ public partial class DailyActivity
             {
                 _repetitionError = true;
                 _isError = true;
-                _message = $"Please enter a valid number (minimum {_minMoreQuantity}).";
+                _message = Content.GetPleaseEnterValidNumberText(_minMoreQuantity);
                 return false;
             }
 
@@ -160,7 +160,7 @@ public partial class DailyActivity
         if (_lastEntry == null)
         {
             _isError = true;
-            _message = "Error: Could not find today's entry.";
+            _message = Content.ErrorEntryNotFound;
             return;
         }
         
@@ -202,14 +202,14 @@ public partial class DailyActivity
             else
             {
                 _isError = true;
-                _message = "Error updating your pushup record.";
+                _message = Content.ErrorUpdatingRecord;
             }
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error updating training entry");
             _isError = true;
-            _message = "Error updating your pushup record.";
+            _message = Content.ErrorUpdatingRecord;
         }
         finally
         {
@@ -255,7 +255,7 @@ public partial class DailyActivity
         {
             Logger.LogError(ex, "Error saving training entry");
             _isError = true;
-            _message = "Error saving your pushup record.";
+            _message = Content.ErrorSavingRecord;
         }
         finally
         {

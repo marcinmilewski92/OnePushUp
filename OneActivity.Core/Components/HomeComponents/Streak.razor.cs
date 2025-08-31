@@ -9,6 +9,8 @@ namespace OneActivity.Core.Components.HomeComponents;
 public partial class Streak
 {
     [Inject]
+    private IActivityContent Content { get; set; } = default!;
+    [Inject]
     private ActivityService ActivityService { get; set; } = default!;
 
     [Inject]

@@ -29,6 +29,7 @@ public class DbInitializer
             _ = typeof(OneActivity.Data.Migrations.InitialCreate);
             _ = typeof(OneActivity.Data.Migrations.ChangeTrainingEntryDateTimeToDateTimeOffset);
             _ = typeof(OneActivity.Data.Migrations.RenameTrainingToActivity);
+            _ = typeof(OneActivity.Data.Migrations.AddGenderToUser);
 
             // Resilient baseline handling: if the app previously used EnsureCreated or old table names,
             // create the migrations history and mark earlier migrations as applied so we can migrate without data loss.

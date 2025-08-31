@@ -1,0 +1,41 @@
+@using OneActivity.Core.Services
+@inject ILanguageService Language
+@inject ISharedContent Shared
+
+<div class="card mt-3">
+    <div class="card-header">
+        <h3>@Shared.LanguageCardTitle</h3>
+    </div>
+    <div class="card-body">
+        <div class="mb-2">
+            <label for="lang-select" class="form-label">@Shared.LanguageChooseLabel</label>
+            <select id="lang-select" class="form-select" @bind="Selected">
+                <option value="en">English (EN)</option>
+                <option value="pl">Polski (PL)</option>
+            </select>
+        </div>
+        <div class="small text-muted">
+            @Shared.CurrentPrefix @Language.CurrentCulture.DisplayName
+        </div>
+    </div>
+</div>
+
+@code {
+    private string _selected = "en";
+    private string Selected
+    {
+        get => _selected;
+        set
+        {
+            if (string.Equals(_selected, value, StringComparison.OrdinalIgnoreCase)) return;
+            _selected = value;
+            Language.SetCulture(_selected);
+            StateHasChanged();
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        _selected = Language.CurrentCulture.TwoLetterISOLanguageName.ToLowerInvariant();
+    }
+}
