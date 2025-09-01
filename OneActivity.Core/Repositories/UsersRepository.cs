@@ -33,6 +33,7 @@ public class UsersRepository : IUsersRepository
         }
 
         existingUser.NickName = user.NickName;
+        existingUser.Gender = user.Gender;
         await _db.SaveChangesAsync();
         return true;
     }
