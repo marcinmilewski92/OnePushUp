@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using OneActivity.Data;
 using Microsoft.Data.Sqlite;
+using System;
 
 namespace OneActivity.Core.Services;
 
@@ -48,10 +49,25 @@ public class DbInitializer
                     return result != null;
                 }
 
+                bool HasColumn(string table, string column)
+                {
+                    using var cmd = conn.CreateCommand();
+                    cmd.CommandText = $"PRAGMA table_info({table});";
+                    using var reader = cmd.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        var name = reader.GetString(1);
+                        if (string.Equals(name, column, StringComparison.OrdinalIgnoreCase))
+                            return true;
+                    }
+                    return false;
+                }
+
                 bool migrationsHistoryExists = HasTable("__EFMigrationsHistory");
                 bool hasTraining = HasTable("TrainingEntries");
                 bool hasActivity = HasTable("ActivityEntries");
                 bool hasUsers = HasTable("Users");
+                bool hasGenderColumn = hasUsers && HasColumn("Users", "Gender");
 
                 if (!migrationsHistoryExists && (hasTraining || hasActivity || hasUsers))
                 {
@@ -89,13 +105,21 @@ public class DbInitializer
                         _logger.LogInformation("Marked InitialCreate and ChangeTrainingEntryDateTimeToDateTimeOffset as applied.");
                     }
 
-                    // If we already have ActivityEntries, mark all known migrations as applied
+                    // If we already have ActivityEntries, mark known migrations as applied
                     if (hasActivity)
                     {
                         MarkApplied("20250824105501_InitialCreate", ver);
                         MarkApplied("20250901000000_ChangeTrainingEntryDateTimeToDateTimeOffset", ver);
                         MarkApplied("20250902000000_RenameTrainingToActivity", ver);
-                        _logger.LogInformation("Marked all known migrations as applied (ActivityEntries present).");
+                        if (hasGenderColumn)
+                        {
+                            MarkApplied("20250903000000_AddGenderToUser", ver);
+                        }
+                        else
+                        {
+                            _logger.LogInformation("Users table lacks Gender column; AddGenderToUser migration will run.");
+                        }
+                        _logger.LogInformation("Marked known migrations as applied (ActivityEntries present).");
                     }
 
                     tx.Commit();
