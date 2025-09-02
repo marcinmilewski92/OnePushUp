@@ -38,7 +38,7 @@ public partial class EditNickname
             }
             else
             {
-                _message = "No user found. Please create a user first.";
+                _message = Shared.NoUserProfileMessage;
                 _isError = true;
                 Logger.LogWarning("No user found in the database");
             }
@@ -46,7 +46,7 @@ public partial class EditNickname
         catch (Exception ex)
         {
             _isError = true;
-            _message = $"Error loading user data: {ex.Message}";
+            _message = $"{Shared.ErrorLoadingUserDataPrefix} {ex.Message}";
             Logger.LogError(ex, "Error loading user data");
         }
         finally
@@ -67,7 +67,7 @@ public partial class EditNickname
             if (_currentUser == null)
             {
                 _isError = true;
-                _message = "No user found to update.";
+                _message = Shared.NoUserProfileMessage;
                 Logger.LogWarning("Attempted to save nickname but no user was found");
                 return;
             }
@@ -75,7 +75,7 @@ public partial class EditNickname
             if (string.IsNullOrWhiteSpace(_nickname))
             {
                 _isError = true;
-                _message = "Nickname cannot be empty.";
+                _message = Shared.NicknameEmptyError;
                 Logger.LogWarning("Attempted to save empty nickname");
                 return;
             }
@@ -92,19 +92,19 @@ public partial class EditNickname
             var success = await UserService.UpdateUserAsync(userDto);
             if (success)
             {
-                _message = "Nickname updated successfully!";
+                _message = Shared.NicknameUpdateSuccess;
                 _isError = false;
             }
             else
             {
-                _message = "Failed to update nickname. Please try again.";
+                _message = Shared.NicknameUpdateFailed;
                 _isError = true;
             }
         }
         catch (Exception ex)
         {
             _isError = true;
-            _message = $"Error updating nickname: {ex.Message}";
+            _message = $"{Shared.ErrorUpdatingNicknamePrefix} {ex.Message}";
             Logger.LogError(ex, "Error updating nickname");
         }
         finally

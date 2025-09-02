@@ -7,6 +7,10 @@ public partial class CreateUser : ComponentBase
 {
     [Inject]
     private UserService UserService { get; set; } = default!;
+    [Inject]
+    private ISharedContent Shared { get; set; } = default!;
+    [Inject]
+    private IActivityContent Content { get; set; } = default!;
     
     public string NickName { get; set; } = string.Empty;
     public string ErrorMessage { get; set; } = string.Empty;
@@ -21,13 +25,13 @@ public partial class CreateUser : ComponentBase
         
         if (string.IsNullOrWhiteSpace(trimmedNickName))
         {
-            ErrorMessage = "Nickname cannot be empty.";
+            ErrorMessage = Shared.NicknameEmptyError;
             return;
         }
-        
+
         if (trimmedNickName.Length > 15)
         {
-            ErrorMessage = "Nickname must be at most 15 characters.";
+            ErrorMessage = Shared.NicknameTooLongError;
             return;
         }
         
@@ -42,12 +46,12 @@ public partial class CreateUser : ComponentBase
             }
             else
             {
-                ErrorMessage = "Failed to create user. Please try again.";
+                ErrorMessage = Shared.CreateUserFailed;
             }
         }
         catch (Exception ex)
         {
-            ErrorMessage = $"Error creating user: {ex.Message}";
+            ErrorMessage = $"{Shared.CreateUserErrorPrefix} {ex.Message}";
         }
     }
 }
