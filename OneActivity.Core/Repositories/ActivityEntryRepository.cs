@@ -60,6 +60,9 @@ public class ActivityEntryRepository : IActivityEntryRepository
         if (today != null && today.Quantity == 0) return (new List<DateTime>(), new List<DailyTotal>());
         var entries = await GetEntriesByLocalDateAsync(userId);
         if (!entries.Any()) return (new List<DateTime>(), entries);
+        var (start, _) = GetUserLocalDateRange();
+        var gap = (start.Date - entries[0].Date).Days;
+        if (today == null && gap > 1) return (new List<DateTime>(), entries);
         var dates = entries.Select(e => e.Date).ToList();
         var streak = 1;
         for (int i = 0; i < dates.Count - 1; i++)
