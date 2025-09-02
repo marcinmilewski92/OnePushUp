@@ -1,11 +1,10 @@
 @page "/create-user"
 
-
-<h3>How would you like me to call you?</h3>
+<h3>@Shared.CreateUserPrompt</h3>
 
 <EditForm Model="this" OnValidSubmit="HandleSubmit">
-    <InputText @bind-Value="NickName" placeholder="Enter your nickname (you can change it later)" />
-    <button type="submit">Submit</button>
+    <InputText @bind-Value="NickName" placeholder="@Shared.CreateUserNicknamePlaceholder" />
+    <button type="submit">@Content.SaveText</button>
     
     @if (!string.IsNullOrEmpty(ErrorMessage))
     {

@@ -2,6 +2,22 @@ namespace OneActivity.Core.Services;
 
 public interface ISharedContent
 {
+    // Create user
+    string CreateUserPrompt { get; }
+    string CreateUserNicknamePlaceholder { get; }
+    string NicknameEmptyError { get; }
+    string NicknameTooLongError { get; }
+    string CreateUserFailed { get; }
+    string CreateUserErrorPrefix { get; }
+
+    // Edit nickname
+    string EditNicknameTitle { get; }
+    string NicknameLabel { get; }
+    string NicknameUpdateSuccess { get; }
+    string NicknameUpdateFailed { get; }
+    string ErrorLoadingUserDataPrefix { get; }
+    string ErrorUpdatingNicknamePrefix { get; }
+
     // Settings general
     string NoUserProfileMessage { get; }
 
@@ -9,6 +25,8 @@ public interface ISharedContent
     string LanguageCardTitle { get; }
     string LanguageChooseLabel { get; }
     string CurrentPrefix { get; }
+    string LanguageEnglishOption { get; }
+    string LanguagePolishOption { get; }
 
     // Gender card
     string GenderCardTitle { get; }
