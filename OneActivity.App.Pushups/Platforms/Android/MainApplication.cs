@@ -9,16 +9,11 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace OneActivity.App.Pushups;
 
 [Application]
-public class MainApplication : MauiApplication
+public class MainApplication(IntPtr handle, JniHandleOwnership ownership) : MauiApplication(handle, ownership)
 {
     private ILogger<MainApplication> Logger => _logger ??=
         Services.GetService<ILogger<MainApplication>>() ?? NullLogger<MainApplication>.Instance;
     private ILogger<MainApplication>? _logger;
-
-    public MainApplication(IntPtr handle, JniHandleOwnership ownership)
-        : base(handle, ownership)
-    {
-    }
 
     protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
 
@@ -31,7 +26,7 @@ public class MainApplication : MauiApplication
 
     private void RegisterForPackageReplaced()
     {
-        IntentFilter filter = new IntentFilter();
+        IntentFilter filter = new();
         filter.AddAction(Intent.ActionMyPackageReplaced);
         RegisterReceiver(new PackageReplacedReceiver(), filter);
     }
@@ -49,7 +44,7 @@ public class MainApplication : MauiApplication
                     if (notificationsEnabled)
                     {
                         Logger.LogInformation("Restoring notifications on app startup");
-                        Intent restoreIntent = new Intent(this, Java.Lang.Class.FromType(typeof(OneActivity.Core.Platforms.Android.NotificationReceiver)));
+                        Intent restoreIntent = new(this, Java.Lang.Class.FromType(typeof(OneActivity.Core.Platforms.Android.NotificationReceiver)));
                         restoreIntent.SetAction(OneActivity.Core.Platforms.Android.NotificationIntentConstants.ActionRestoreNotifications);
                         SendBroadcast(restoreIntent);
                     }

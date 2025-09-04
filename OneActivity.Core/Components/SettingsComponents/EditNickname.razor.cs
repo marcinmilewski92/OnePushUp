@@ -28,9 +28,9 @@ public partial class EditNickname
         {
             _isLoading = true;
             _message = string.Empty;
-            
+
             _currentUser = await UserService.GetCurrentUserAsync();
-            
+
             if (_currentUser != null)
             {
                 _nickname = _currentUser.NickName;
@@ -63,7 +63,7 @@ public partial class EditNickname
             _isSaving = true;
             _message = string.Empty;
             _isError = false;
-            
+
             if (_currentUser == null)
             {
                 _isError = true;

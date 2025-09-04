@@ -2,14 +2,13 @@ using OneActivity.Core.Services;
 using OneActivity.Data;
 
 namespace OneActivity.App.Reading.Flavors.Reading;
-public class ReadingContentLocalized : IActivityContent
+public class ReadingContentLocalized(ILanguageService lang, ReadingContentEn en, ReadingContentPl pl) : IActivityContent
 {
-    private readonly ILanguageService _lang;
-    private readonly ReadingContentEn _en;
-    private readonly ReadingContentPl _pl;
-    public ReadingContentLocalized(ILanguageService lang, ReadingContentEn en, ReadingContentPl pl)
-    { _lang = lang; _en = en; _pl = pl; }
-    private IActivityContent Current => _lang.CurrentCulture.TwoLetterISOLanguageName.ToLowerInvariant() == "pl" ? _pl : _en;
+    private readonly ILanguageService _lang = lang;
+    private readonly ReadingContentEn _en = en;
+    private readonly ReadingContentPl _pl = pl;
+
+    private IActivityContent Current => _lang.CurrentCulture.TwoLetterISOLanguageName.Equals("pl", StringComparison.InvariantCultureIgnoreCase) ? _pl : _en;
     public void SetUser(User user)
     { _en.SetUser(user); _pl.SetUser(user); }
     public string AppName => Current.AppName;

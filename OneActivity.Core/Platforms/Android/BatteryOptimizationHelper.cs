@@ -7,14 +7,9 @@ using Microsoft.Maui.ApplicationModel;
 
 namespace OneActivity.Core.Platforms.Android;
 
-public class BatteryOptimizationHelper
+public class BatteryOptimizationHelper(ILogger logger)
 {
-    private readonly ILogger _logger;
-
-    public BatteryOptimizationHelper(ILogger logger)
-    {
-        _logger = logger;
-    }
+    private readonly ILogger _logger = logger;
 
     public async Task<bool> RequestBatteryOptimizationExemptionAsync()
     {
@@ -40,7 +35,7 @@ public class BatteryOptimizationHelper
         }
     }
 
-    public bool IsIgnoringBatteryOptimizations()
+    public static bool IsIgnoringBatteryOptimizations()
     {
         if (Build.VERSION.SdkInt < BuildVersionCodes.M)
             return true;

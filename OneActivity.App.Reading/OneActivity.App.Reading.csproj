@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
   <PropertyGroup>
-    <TargetFrameworks>net8.0-android;net8.0-maccatalyst</TargetFrameworks>
+    <TargetFrameworks>net8.0-android</TargetFrameworks>
+    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('osx'))">$(TargetFrameworks);net8.0-maccatalyst</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <RootNamespace>OneActivity.App.Reading</RootNamespace>
     <UseMaui>true</UseMaui>
@@ -12,6 +13,9 @@
     <ApplicationId>com.company.oneactivity.reading</ApplicationId>
     <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
     <ApplicationVersion>1</ApplicationVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24.0</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">14.0</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">14.2</SupportedOSPlatformVersion>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\\OneActivity.Data\\OneActivity.Data.csproj" />
@@ -23,5 +27,10 @@
     </MauiAsset>
     <MauiSplashScreen Include="Resources\splash.svg" Color="#fda206" BaseSize="128,128" />
     <MauiIcon Include="Resources\AppIcon\appicon.svg" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Controls" Version="8.0.100" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="8.0.100" />
   </ItemGroup>
 </Project>

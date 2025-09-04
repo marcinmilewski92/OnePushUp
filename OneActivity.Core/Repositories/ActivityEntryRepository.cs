@@ -3,12 +3,10 @@ using OneActivity.Data;
 
 namespace OneActivity.Core.Repositories;
 
-public class ActivityEntryRepository : IActivityEntryRepository
+public class ActivityEntryRepository(OneActivityDbContext db) : IActivityEntryRepository
 {
-    private readonly OneActivityDbContext _db;
+    private readonly OneActivityDbContext _db = db;
     private readonly record struct DailyTotal(DateTime Date, int Total);
-
-    public ActivityEntryRepository(OneActivityDbContext db) { _db = db; }
 
     public async Task<Guid> CreateAsync(ActivityEntry entry)
     {
@@ -29,7 +27,7 @@ public class ActivityEntryRepository : IActivityEntryRepository
 
     public async Task<bool> HasEntryForTodayAsync(Guid userId)
     {
-        var (start, end) = GetUserLocalDateRange();
+        var (start, end) = ActivityEntryRepository.GetUserLocalDateRange();
         var startUtc = start.ToUniversalTime();
         var endUtc = end.ToUniversalTime();
         var entries = await _db.ActivityEntries.AsNoTracking().Where(e => e.UserId == userId).Select(e => e.DateTime).ToListAsync();
@@ -38,7 +36,7 @@ public class ActivityEntryRepository : IActivityEntryRepository
 
     public async Task<ActivityEntry?> GetEntryForTodayAsync(Guid userId)
     {
-        var (start, end) = GetUserLocalDateRange();
+        var (start, end) = ActivityEntryRepository.GetUserLocalDateRange();
         var startUtc = start.ToUniversalTime();
         var endUtc = end.ToUniversalTime();
         var entries = await _db.ActivityEntries.AsNoTracking().Where(e => e.UserId == userId).ToListAsync();
@@ -51,7 +49,10 @@ public class ActivityEntryRepository : IActivityEntryRepository
     private async Task<List<DailyTotal>> GetEntriesByLocalDateAsync(Guid userId)
     {
         var entries = await _db.ActivityEntries.AsNoTracking().Where(e => e.UserId == userId && e.Quantity > 0).ToListAsync();
-        return entries.GroupBy(e => e.DateTime.ToLocalTime().Date).Select(g => new DailyTotal(g.Key, g.Sum(e => e.Quantity))).OrderByDescending(x => x.Date).ToList();
+        return
+        [
+            .. entries.GroupBy(e => e.DateTime.ToLocalTime().Date).Select(g => new DailyTotal(g.Key, g.Sum(e => e.Quantity))).OrderByDescending(x => x.Date),
+        ];
     }
 
     private async Task<(List<DateTime> streakDates, List<DailyTotal> entries)> GetOrderedStreakDatesAsync(Guid userId)
@@ -59,8 +60,8 @@ public class ActivityEntryRepository : IActivityEntryRepository
         var today = await GetEntryForTodayAsync(userId);
         if (today != null && today.Quantity == 0) return (new List<DateTime>(), new List<DailyTotal>());
         var entries = await GetEntriesByLocalDateAsync(userId);
-        if (!entries.Any()) return (new List<DateTime>(), entries);
-        var (start, _) = GetUserLocalDateRange();
+        if (entries.Count == 0) return (new List<DateTime>(), entries);
+        var (start, _) = ActivityEntryRepository.GetUserLocalDateRange();
         var gap = (start.Date - entries[0].Date).Days;
         if (today == null && gap > 1) return (new List<DateTime>(), entries);
         var dates = entries.Select(e => e.Date).ToList();
@@ -86,7 +87,7 @@ public class ActivityEntryRepository : IActivityEntryRepository
 
     public async Task<bool> DeleteEntryForTodayAsync(Guid userId)
     {
-        var (start, end) = GetUserLocalDateRange();
+        var (start, end) = ActivityEntryRepository.GetUserLocalDateRange();
         var startUtc = start.ToUniversalTime();
         var endUtc = end.ToUniversalTime();
         var candidates = await _db.ActivityEntries.Where(e => e.UserId == userId).ToListAsync();
@@ -96,7 +97,7 @@ public class ActivityEntryRepository : IActivityEntryRepository
         return await _db.SaveChangesAsync() > 0;
     }
 
-    private (DateTimeOffset start, DateTimeOffset end) GetUserLocalDateRange()
+    private static (DateTimeOffset start, DateTimeOffset end) GetUserLocalDateRange()
     {
         var now = DateTimeOffset.Now;
         var start = new DateTimeOffset(now.Year, now.Month, now.Day, 0, 0, 0, now.Offset);

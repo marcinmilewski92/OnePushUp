@@ -3,6 +3,9 @@ using OneActivity.Data;
 
 namespace OneActivity.Core.Repositories;
 
+
+/* Unmerged change from project 'OneActivity.Core(net8.0-android)'
+Before:
 public class UsersRepository : IUsersRepository
 {
     private readonly OneActivityDbContext _db;
@@ -10,13 +13,37 @@ public class UsersRepository : IUsersRepository
     {
         _db = db;
     }
+After:
+public class UsersRepository(OneActivityDbContext db) : IUsersRepository
+{
+    private readonly OneActivityDbContext _db = db;
+*/
+
+/* Unmerged change from project 'OneActivity.Core(net8.0-maccatalyst)'
+Before:
+public class UsersRepository : IUsersRepository
+{
+    private readonly OneActivityDbContext _db;
+    public UsersRepository(OneActivityDbContext db)
+    {
+        _db = db;
+    }
+After:
+public class UsersRepository(OneActivityDbContext db) : IUsersRepository
+{
+    private readonly OneActivityDbContext _db = db;
+*/
+public class UsersRepository(OneActivityDbContext db) : IUsersRepository
+{
+    private readonly OneActivityDbContext _db = db;
+
     public async Task<Guid> CreateAsync(User user)
     {
         var userEntry = await _db.Users.AddAsync(user);
         await _db.SaveChangesAsync();
         return userEntry.Entity.Id;
     }
-    
+
     public async Task<User?> GetAsync()
     {
         return await _db.Users

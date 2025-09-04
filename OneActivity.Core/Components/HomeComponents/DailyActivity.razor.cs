@@ -22,13 +22,13 @@ public partial class DailyActivity
 
     [Inject]
     private ILogger<DailyActivity> Logger { get; set; } = default!;
-    
+
     [Parameter]
     public User CurrentUser { get; set; } = default!;
-    
+
     [Parameter]
     public EventCallback OnEntryAdded { get; set; }
-    
+
     private bool _isLoading = true;
     private bool _isSaving;
     private bool _hasCompletedToday;
@@ -41,12 +41,22 @@ public partial class DailyActivity
     private ActivityEntryDto? _lastEntry;
     private int _minMoreQuantity => Math.Max(Content.MinimalQuantity + 1, Content.MinimalQuantity == int.MaxValue ? int.MaxValue : Content.MinimalQuantity + 1);
     private bool _showConfetti;
-    private static readonly string[] ConfettiColors = new[]
-    {
-        "#e74c3c", "#f1c40f", "#2ecc71", "#3498db", "#9b59b6", "#e67e22",
-        "#1abc9c", "#ff6b6b", "#ffd166", "#06d6a0", "#118ab2", "#ef476f"
-    };
-    
+    private static readonly string[] ConfettiColors =
+    [
+        "#e74c3c",
+        "#f1c40f",
+        "#2ecc71",
+        "#3498db",
+        "#9b59b6",
+        "#e67e22",
+        "#1abc9c",
+        "#ff6b6b",
+        "#ffd166",
+        "#06d6a0",
+        "#118ab2",
+        "#ef476f"
+    ];
+
     protected override async Task OnInitializedAsync()
     {
         Content.SetUser(CurrentUser);
@@ -61,19 +71,19 @@ public partial class DailyActivity
             await CheckTodayStatus();
         }
     }
-    
+
     private async Task CheckTodayStatus()
     {
         try
         {
             _isLoading = true;
             _hasCompletedToday = await ActivityService.HasEntryForTodayAsync(CurrentUser.Id);
-            
+
             if (_hasCompletedToday)
             {
                 // Get today's entry for display and potential editing
                 _lastEntry = await ActivityService.GetTodayEntryAsync(CurrentUser.Id);
-                
+
                 // Pre-set the form values based on today's entry
                 if (_lastEntry != null)
                 {
@@ -93,13 +103,13 @@ public partial class DailyActivity
             StateHasChanged();
         }
     }
-    
+
     private void EnableEditMode()
     {
         _isEditing = true;
         _message = string.Empty;
         _isError = false;
-        
+
         // Pre-set the form values based on the current entry
         if (_lastEntry != null)
         {
@@ -123,7 +133,7 @@ public partial class DailyActivity
             _repetitions = entry.Quantity;
         }
     }
-    
+
     private void CancelEdit()
     {
         _isEditing = false;
@@ -163,7 +173,7 @@ public partial class DailyActivity
             _message = Content.ErrorEntryNotFound;
             return;
         }
-        
+
         try
         {
             _isSaving = true;
@@ -179,18 +189,18 @@ public partial class DailyActivity
             // Update the existing entry
             var oldQuantity = _lastEntry.Quantity;
             bool success = await ActivityService.UpdateEntryAsync(_lastEntry.Id, repetitions);
-            
+
             if (success)
             {
                 // Refresh last entry
                 _lastEntry = await ActivityService.GetTodayEntryAsync(CurrentUser.Id);
-                
+
                 var isZero = _selectedOption == ActivityOption.No;
                 _message = Content.UpdateSuccessMessage(isZero);
                 _isError = false;
-                
+
                 _isEditing = false; // Exit edit mode
-                
+
                 await OnEntryAdded.InvokeAsync(); // Refresh streak data
 
                 // Celebrate only when quantity increased
@@ -217,7 +227,7 @@ public partial class DailyActivity
             StateHasChanged();
         }
     }
-    
+
     private async Task SaveTrainingEntry()
     {
         try
@@ -234,15 +244,15 @@ public partial class DailyActivity
 
             // Always save an entry, even for "No" responses
             await ActivityService.CreateEntryAsync(CurrentUser.Id, repetitions);
-            
+
             // Refresh last entry
             _lastEntry = await ActivityService.GetTodayEntryAsync(CurrentUser.Id);
             var isZero = _selectedOption == ActivityOption.No;
             _message = Content.SaveSuccessMessage(isZero);
             _isError = false;
-            
+
             _hasCompletedToday = true;
-            
+
             await OnEntryAdded.InvokeAsync();
 
             // Celebrate non-zero saves

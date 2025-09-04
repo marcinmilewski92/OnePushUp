@@ -8,12 +8,12 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace OneActivity.Core.Platforms.Android;
 
 [BroadcastReceiver(Enabled = true, Exported = true)]
-[IntentFilter(new[] {
+[IntentFilter([
     Intent.ActionBootCompleted,
     Intent.ActionLockedBootCompleted,
     "android.intent.action.QUICKBOOT_POWERON",
     "android.intent.action.MY_PACKAGE_REPLACED"
-})]
+])]
 public class NotificationReceiver : BroadcastReceiver
 {
     private const string LastFiredDateKey = "last_notification_fired_date"; // yyyy-MM-dd

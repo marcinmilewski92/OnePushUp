@@ -8,10 +8,10 @@ public partial class CreateUser : ComponentBase
     [Inject]
     private UserService UserService { get; set; } = default!;
     [Inject]
-    private ISharedContent Shared { get; set; } = default!;
-    [Inject]
     private IActivityContent Content { get; set; } = default!;
-    
+    [Inject]
+    private ISharedContent Shared { get; set; } = default!;
+
     public string NickName { get; set; } = string.Empty;
     public string ErrorMessage { get; set; } = string.Empty;
 
@@ -21,36 +21,30 @@ public partial class CreateUser : ComponentBase
     private async Task HandleSubmit()
     {
         ErrorMessage = string.Empty;
-        var trimmedNickName = NickName.Trim();
-        
-        if (string.IsNullOrWhiteSpace(trimmedNickName))
+
+        // Basic validation
+        if (string.IsNullOrWhiteSpace(NickName))
         {
             ErrorMessage = Shared.NicknameEmptyError;
             return;
         }
-
-        if (trimmedNickName.Length > 15)
+        if (NickName.Length > 15)
         {
             ErrorMessage = Shared.NicknameTooLongError;
             return;
         }
-        
+
         try
         {
-            var userId = await UserService.CreateUserAsync(trimmedNickName);
-            
-            if (userId != Guid.Empty)
+            var userId = await UserService.CreateUserAsync(NickName.Trim());
+            if (OnUserCreated.HasDelegate)
             {
-                NickName = string.Empty;
                 await OnUserCreated.InvokeAsync(userId);
-            }
-            else
-            {
-                ErrorMessage = Shared.CreateUserFailed;
             }
         }
         catch (Exception ex)
         {
+            // Provide a simple error surface
             ErrorMessage = $"{Shared.CreateUserErrorPrefix} {ex.Message}";
         }
     }

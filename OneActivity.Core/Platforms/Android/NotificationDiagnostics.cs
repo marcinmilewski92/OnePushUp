@@ -7,7 +7,7 @@ using OneActivity.Core.Services;
 
 namespace OneActivity.Core.Platforms.Android;
 
-public class mAndroidNotificationDiagnostics : INotificationDiagnostics
+public class AndroidNotificationDiagnostics : INotificationDiagnostics
 {
     public Task<bool> IsExactAlarmAllowedAsync()
     {

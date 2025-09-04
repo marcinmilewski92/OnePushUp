@@ -6,18 +6,11 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace OneActivity.Core.Platforms.Android;
 
-public class AlarmScheduler : IAlarmScheduler
+public class AlarmScheduler(ILogger<AlarmScheduler> logger, INotificationScheduler scheduler) : IAlarmScheduler
 {
-    private readonly ILogger<AlarmScheduler> _logger;
-    private readonly NotificationService? _notificationService;
-    private readonly INotificationScheduler _scheduler;
-
-    public AlarmScheduler(ILogger<AlarmScheduler> logger, INotificationScheduler scheduler)
-    {
-        _logger = logger;
-        _scheduler = scheduler;
-        _notificationService = MauiApplication.Current?.Services?.GetService<NotificationService>();
-    }
+    private readonly ILogger<AlarmScheduler> _logger = logger;
+    private readonly NotificationService? _notificationService = MauiApplication.Current?.Services?.GetService<NotificationService>();
+    private readonly INotificationScheduler _scheduler = scheduler;
 
     public void RestoreNotificationsAfterReboot(Context context)
     {

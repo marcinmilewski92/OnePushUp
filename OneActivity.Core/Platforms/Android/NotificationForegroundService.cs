@@ -19,10 +19,7 @@ public class NotificationForegroundService : Service
         MauiApplication.Current.Services?.GetService<ILogger<NotificationForegroundService>>() ??
         Microsoft.Extensions.Logging.Abstractions.NullLogger<NotificationForegroundService>.Instance;
     private ILogger<NotificationForegroundService>? _logger;
-
-    private IActivityContent? ActivityContent => _activityContent ??=
-        MauiApplication.Current.Services?.GetService<IActivityContent>();
-    private IActivityContent? _activityContent;
+    private readonly IActivityContent? _activityContent;
 
     public override IBinder? OnBind(Intent? intent) => null;
     

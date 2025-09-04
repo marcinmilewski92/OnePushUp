@@ -5,19 +5,13 @@ using Preferences = Microsoft.Maui.Storage.Preferences;
 
 namespace OneActivity.Core.Services;
 
-public class NotificationService
+public class NotificationService(ILogger<NotificationService> logger, INotificationScheduler scheduler)
 {
-    private readonly ILogger<NotificationService> _logger;
-    private readonly INotificationScheduler _scheduler;
+    private readonly ILogger<NotificationService> _logger = logger;
+    private readonly INotificationScheduler _scheduler = scheduler;
     private const string EnabledKey = "notifications_enabled";
     private const string TimeKey = "notification_time";
     public static readonly TimeSpan DefaultNotificationTime = TimeSpan.FromHours(8);
-
-    public NotificationService(ILogger<NotificationService> logger, INotificationScheduler scheduler)
-    {
-        _logger = logger;
-        _scheduler = scheduler;
-    }
 
     public async Task<NotificationSettings> GetNotificationSettingsAsync()
     {

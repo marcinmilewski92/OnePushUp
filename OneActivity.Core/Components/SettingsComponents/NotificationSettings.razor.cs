@@ -12,24 +12,24 @@ public partial class NotificationSettings
 
     [Inject]
     private ILogger<NotificationSettings> Logger { get; set; } = default!;
-    
+
     private bool _isLoading = true;
     private bool _notificationsEnabled;
     private string _notificationTimeText = "08:00"; // 24h HH:mm
     private string _message = string.Empty;
     private bool _isError;
-    
+
     protected override async Task OnInitializedAsync()
     {
         await LoadNotificationSettings();
     }
-    
+
     private async Task LoadNotificationSettings()
     {
         try
         {
             _isLoading = true;
-            
+
             var settings = await NotificationService.GetNotificationSettingsAsync();
             _notificationsEnabled = settings.Enabled;
 
@@ -42,7 +42,7 @@ public partial class NotificationSettings
             {
                 _notificationTimeText = "08:00";
             }
-            
+
             _isLoading = false;
             if (_notificationsEnabled)
             {
@@ -57,7 +57,7 @@ public partial class NotificationSettings
             _isLoading = false;
         }
     }
-    
+
     private async Task ToggleNotifications()
     {
         try
@@ -70,7 +70,7 @@ public partial class NotificationSettings
                     var normalized = (_notificationTimeText ?? string.Empty).Trim();
                     if (normalized.Length >= 5)
                     {
-                        normalized = normalized.Substring(0, 5);
+                        normalized = normalized[..5];
                         _notificationTimeText = normalized;
                     }
 
@@ -89,9 +89,9 @@ public partial class NotificationSettings
                 Enabled = _notificationsEnabled,
                 Time = time
             });
-                
-            _message = _notificationsEnabled 
-                ? "Notifications enabled successfully!" 
+
+            _message = _notificationsEnabled
+                ? "Notifications enabled successfully!"
                 : "Notifications disabled successfully!";
             _isError = false;
 
@@ -107,11 +107,11 @@ public partial class NotificationSettings
             Logger.LogError(ex, "Error updating notification settings");
         }
     }
-    
+
     private async Task UpdateNotificationTime()
     {
         if (!_notificationsEnabled) return;
-        
+
         try
         {
             if (!TryParseNotificationTime(out var parsed))
@@ -152,9 +152,9 @@ public partial class NotificationSettings
         if (string.IsNullOrEmpty(s)) return false;
 
         if (s.Length >= 8 && s[2] == ':' && s[5] == ':')
-            s = s.Substring(0, 5);
+            s = s[..5];
 
-        if (TimeSpan.TryParseExact(s, new[] { "HH\\:mm", "H\\:mm" }, CultureInfo.InvariantCulture, out var ts))
+        if (TimeSpan.TryParseExact(s, formats, CultureInfo.InvariantCulture, out var ts))
         {
             time = ts;
             _notificationTimeText = ts.ToString("hh\\:mm", CultureInfo.InvariantCulture);
@@ -175,6 +175,8 @@ public partial class NotificationSettings
     [Inject] private INotificationDiagnostics NotificationDiagnostics { get; set; } = default!;
     protected bool? ExactAlarmAllowed { get; set; }
     protected bool? IgnoringBatteryOptimizations { get; set; }
+
+    private static readonly string[] formats = new[] { "HH\\:mm", "H\\:mm" };
 
     private async Task LoadDiagnostics()
     {

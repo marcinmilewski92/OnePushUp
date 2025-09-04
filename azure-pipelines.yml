@@ -19,8 +19,11 @@ steps:
   - script: dotnet workload install maui
     displayName: 'Install MAUI workload'
 
-  - script: dotnet restore OnePushUp.sln
+  - script: dotnet restore OneActivity.sln
     displayName: 'Restore dependencies'
 
-  - script: dotnet build OnePushUp.sln -c $(buildConfiguration) -f net8.0-windows10.0.19041.0 --no-restore
+  - script: dotnet build OneActivity.sln -c $(buildConfiguration) --no-restore
     displayName: 'Build solution'
+
+  - script: dotnet test OneActivity.sln -c $(buildConfiguration) --no-build
+    displayName: 'Run tests'

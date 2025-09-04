@@ -1,13 +1,12 @@
 namespace OneActivity.Core.Services;
 
-public class SharedContentLocalized : ISharedContent
+public class SharedContentLocalized(ILanguageService lang, SharedContentEn en, SharedContentPl pl) : ISharedContent
 {
-    private readonly ILanguageService _lang;
-    private readonly SharedContentEn _en;
-    private readonly SharedContentPl _pl;
-    public SharedContentLocalized(ILanguageService lang, SharedContentEn en, SharedContentPl pl)
-    { _lang = lang; _en = en; _pl = pl; }
-    private ISharedContent Cur => _lang.CurrentCulture.TwoLetterISOLanguageName.ToLowerInvariant() == "pl" ? _pl : _en;
+    private readonly ILanguageService _lang = lang;
+    private readonly SharedContentEn _en = en;
+    private readonly SharedContentPl _pl = pl;
+
+    private ISharedContent Cur => _lang.CurrentCulture.TwoLetterISOLanguageName.Equals("pl", StringComparison.InvariantCultureIgnoreCase) ? _pl : _en;
 
     public string CreateUserPrompt => Cur.CreateUserPrompt;
     public string CreateUserNicknamePlaceholder => Cur.CreateUserNicknamePlaceholder;

@@ -14,17 +14,11 @@ public interface INotificationDisplayer
     void ShowTestNotification(Context context, Intent intent);
 }
 
-public class NotificationDisplayer : INotificationDisplayer
+public class NotificationDisplayer(ILogger<NotificationDisplayer> logger, IActivityContent content) : INotificationDisplayer
 {
-    private readonly ILogger<NotificationDisplayer> _logger;
-    private readonly IActivityContent _content;
+    private readonly ILogger<NotificationDisplayer> _logger = logger;
+    private readonly IActivityContent _content = content;
     public const string ChannelId = "activity_reminders";
-
-    public NotificationDisplayer(ILogger<NotificationDisplayer> logger, IActivityContent content)
-    {
-        _logger = logger;
-        _content = content;
-    }
 
     public void ShowActivityNotification(Context context, Intent intent)
     {

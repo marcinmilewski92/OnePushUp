@@ -4,6 +4,9 @@ using OneActivity.Core.Repositories;
 
 namespace OneActivity.Core.Services;
 
+
+/* Unmerged change from project 'OneActivity.Core(net8.0-android)'
+Before:
 public class ActivityService
 {
     private readonly IActivityEntryRepository _repo;
@@ -12,6 +15,30 @@ public class ActivityService
     {
         _repo = repo;
     }
+After:
+public class ActivityService(IActivityEntryRepository repo)
+{
+    private readonly IActivityEntryRepository _repo = repo;
+*/
+
+/* Unmerged change from project 'OneActivity.Core(net8.0-maccatalyst)'
+Before:
+public class ActivityService
+{
+    private readonly IActivityEntryRepository _repo;
+
+    public ActivityService(IActivityEntryRepository repo)
+    {
+        _repo = repo;
+    }
+After:
+public class ActivityService(IActivityEntryRepository repo)
+{
+    private readonly IActivityEntryRepository _repo = repo;
+*/
+public class ActivityService(IActivityEntryRepository repo)
+{
+    private readonly IActivityEntryRepository _repo = repo;
 
     public async Task<Guid> CreateEntryAsync(Guid userId, int quantity)
     {
@@ -21,7 +48,7 @@ public class ActivityService
             Quantity = quantity,
             UserId = userId
         };
-        
+
         return await _repo.CreateAsync(entry);
     }
 
@@ -32,7 +59,7 @@ public class ActivityService
         {
             return false;
         }
-        
+
         entry.Quantity = quantity;
         return await _repo.UpdateAsync(entry);
     }
@@ -54,14 +81,14 @@ public class ActivityService
     public async Task<StreakDataDto> GetStreakDataAsync(Guid userId)
     {
         var currentStreak = await _repo.GetCurrentStreakAsync(userId);
-        var streakTotal   = await _repo.GetTotalQuantityInCurrentStreakAsync(userId);
-        var total         = await _repo.GetTotalQuantityAsync(userId);
+        var streakTotal = await _repo.GetTotalQuantityInCurrentStreakAsync(userId);
+        var total = await _repo.GetTotalQuantityAsync(userId);
 
         return new StreakDataDto
         {
-            CurrentStreak            = currentStreak,
-            QuantityInCurrentStreak  = streakTotal,
-            TotalQuantity            = total
+            CurrentStreak = currentStreak,
+            QuantityInCurrentStreak = streakTotal,
+            TotalQuantity = total
         };
     }
 

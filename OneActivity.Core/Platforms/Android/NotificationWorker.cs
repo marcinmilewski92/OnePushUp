@@ -8,21 +8,15 @@ using Java.Util.Concurrent;
 
 namespace OneActivity.Core.Platforms.Android;
 
-public class NotificationWorker : Worker
+public class NotificationWorker(Context context, WorkerParameters workerParams) : Worker(context, workerParams)
 {
-    private readonly ILogger<NotificationWorker> _logger;
+    private readonly ILogger<NotificationWorker> _logger = MauiApplication.Current?.Services?.GetService<ILogger<NotificationWorker>>() ??
+                  Microsoft.Extensions.Logging.Abstractions.NullLogger<NotificationWorker>.Instance;
 
     private INotificationDisplayer? NotificationDisplayer => _displayer ??=
         MauiApplication.Current?.Services?.GetService<INotificationDisplayer>();
     private INotificationDisplayer? _displayer;
-    
-    public NotificationWorker(Context context, WorkerParameters workerParams) 
-        : base(context, workerParams) 
-    {
-        _logger = MauiApplication.Current?.Services?.GetService<ILogger<NotificationWorker>>() ??
-                  Microsoft.Extensions.Logging.Abstractions.NullLogger<NotificationWorker>.Instance;
-    }
-    
+
     public override Result DoWork()
     {
         try

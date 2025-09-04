@@ -4,16 +4,10 @@ using OneActivity.Core.Models.Dtos;
 
 namespace OneActivity.Core.Services;
 
-public class UserService
+public class UserService(OneActivityDbContext dbContext, IGenderService genderService)
 {
-    private readonly OneActivityDbContext _dbContext;
-    private readonly IGenderService _genderService;
-
-    public UserService(OneActivityDbContext dbContext, IGenderService genderService)
-    {
-        _dbContext = dbContext;
-        _genderService = genderService;
-    }
+    private readonly OneActivityDbContext _dbContext = dbContext;
+    private readonly IGenderService _genderService = genderService;
 
     public async Task<User?> GetCurrentUserAsync()
     {

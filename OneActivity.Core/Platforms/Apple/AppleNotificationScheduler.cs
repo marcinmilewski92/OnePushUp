@@ -6,16 +6,10 @@ using Foundation;
 
 namespace OneActivity.Core.Platforms.Apple;
 
-public class AppleNotificationScheduler : INotificationScheduler
+public class AppleNotificationScheduler(ILogger<AppleNotificationScheduler> logger, IActivityContent content) : INotificationScheduler
 {
-    private readonly ILogger<AppleNotificationScheduler> _logger;
-    private readonly IActivityContent _content;
-
-    public AppleNotificationScheduler(ILogger<AppleNotificationScheduler> logger, IActivityContent content)
-    {
-        _logger = logger;
-        _content = content;
-    }
+    private readonly ILogger<AppleNotificationScheduler> _logger = logger;
+    private readonly IActivityContent _content = content;
 
     public async Task ScheduleAsync(TimeSpan time) => await ScheduleAsync(new[] { time });
 

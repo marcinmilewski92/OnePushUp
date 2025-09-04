@@ -3,11 +3,11 @@ using OneActivity.Data;
 
 namespace OneActivity.App.Reading.Flavors.Reading;
 
-public class ReadingContentPl : IActivityContent
+public class ReadingContentPl(IGenderService gender) : IActivityContent
 {
-    private readonly IGenderService _gender;
+    private readonly IGenderService _gender = gender;
     private User? _user;
-    public ReadingContentPl(IGenderService gender) => _gender = gender;
+
     public void SetUser(User user) => _user = user;
     public string AppName => "OneBookPage";
     public string UnitSingular => "strona"; // mianownik
@@ -15,7 +15,6 @@ public class ReadingContentPl : IActivityContent
     public string Verb => "przeczytać";
     public int MinimalQuantity => 1;
     private static string PluralizeStrona(int n) => n == 1 ? "strona" : (n % 10 is >= 2 and <= 4 && (n % 100 < 10 || n % 100 >= 20) ? "strony" : "stron");
-    private static string PluralizeStronę(int n) => n == 1 ? "stronę" : (n % 10 is >= 2 and <= 4 && (n % 100 < 10 || n % 100 >= 20) ? "strony" : "stron");
 
     public string FormatQuantity(int quantity) => $"{quantity} {PluralizeStrona(quantity)}";
     private bool IsFemale => _gender.Current == Gender.Female;

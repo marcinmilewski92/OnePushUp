@@ -2,14 +2,9 @@ using Microsoft.Extensions.Logging;
 
 namespace OneActivity.Core.Services;
 
-public class DefaultNotificationScheduler : INotificationScheduler
+public class DefaultNotificationScheduler(ILogger<DefaultNotificationScheduler> logger) : INotificationScheduler
 {
-    private readonly ILogger<DefaultNotificationScheduler> _logger;
-
-    public DefaultNotificationScheduler(ILogger<DefaultNotificationScheduler> logger)
-    {
-        _logger = logger;
-    }
+    private readonly ILogger<DefaultNotificationScheduler> _logger = logger;
 
     public Task ScheduleAsync(TimeSpan time)
     {

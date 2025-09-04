@@ -6,16 +6,10 @@ using System;
 
 namespace OneActivity.Core.Services;
 
-public class DbInitializer
+public class DbInitializer(IServiceProvider serviceProvider, ILogger<DbInitializer> logger)
 {
-    private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger<DbInitializer> _logger;
-
-    public DbInitializer(IServiceProvider serviceProvider, ILogger<DbInitializer> logger)
-    {
-        _serviceProvider = serviceProvider;
-        _logger = logger;
-    }
+    private readonly IServiceProvider _serviceProvider = serviceProvider;
+    private readonly ILogger<DbInitializer> _logger = logger;
 
     public void Initialize()
     {

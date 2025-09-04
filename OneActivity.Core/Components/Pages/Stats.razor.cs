@@ -11,14 +11,13 @@ public partial class Stats : ComponentBase
     public UserService UserService { get; set; } = default!;
 
     public User? CurrentUser { get; set; }
-    
     private Streak? _streakComponent;
 
     protected override async Task OnInitializedAsync()
     {
         CurrentUser = await UserService.GetCurrentUserAsync();
     }
-    
+
     public async Task HandleStreakDataLoaded()
     {
         StateHasChanged();

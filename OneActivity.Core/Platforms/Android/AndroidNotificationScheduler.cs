@@ -10,19 +10,12 @@ using AndroidApp = global::Android.App.Application;
 
 namespace OneActivity.Core.Platforms.Android;
 
-public class AndroidNotificationScheduler : INotificationScheduler
+public class AndroidNotificationScheduler(ILogger<AndroidNotificationScheduler> logger, IActivityContent content) : INotificationScheduler
 {
-    private readonly ILogger<AndroidNotificationScheduler> _logger;
-    private readonly IActivityContent _content;
-    private BatteryOptimizationHelper? _batteryHelper;
+    private readonly ILogger<AndroidNotificationScheduler> _logger = logger;
+    private readonly IActivityContent _content = content;
+    private readonly BatteryOptimizationHelper? _batteryHelper = new BatteryOptimizationHelper(logger);
     private const string LastScheduledKey = "last_notification_scheduled";
-
-    public AndroidNotificationScheduler(ILogger<AndroidNotificationScheduler> logger, IActivityContent content)
-    {
-        _logger = logger;
-        _content = content;
-        _batteryHelper = new BatteryOptimizationHelper(logger);
-    }
 
     public async Task<bool> RequestBatteryOptimizationExemptionAsync()
     {
@@ -31,14 +24,14 @@ public class AndroidNotificationScheduler : INotificationScheduler
 
     public bool IsIgnoringBatteryOptimizations()
     {
-        return _batteryHelper!.IsIgnoringBatteryOptimizations();
+        return BatteryOptimizationHelper.IsIgnoringBatteryOptimizations();
     }
 
 
     public Task ScheduleAsync(TimeSpan time) => ScheduleAndroidNotificationAsync(time);
     public Task CancelAsync() => CancelAndroidNotificationsAsync();
 
-    private async Task<bool> CheckAndRequestNotificationPermissionAsync()
+    private static async Task<bool> CheckAndRequestNotificationPermissionAsync()
     {
         if (Build.VERSION.SdkInt >= BuildVersionCodes.Tiramisu)
         {
@@ -64,8 +57,7 @@ public class AndroidNotificationScheduler : INotificationScheduler
     {
         if (Build.VERSION.SdkInt >= BuildVersionCodes.S)
         {
-            var alarmManager = context.GetSystemService(Context.AlarmService) as AlarmManager;
-            if (alarmManager != null && !alarmManager.CanScheduleExactAlarms())
+            if (context.GetSystemService(Context.AlarmService) is AlarmManager alarmManager && !alarmManager.CanScheduleExactAlarms())
             {
                 try
                 {
@@ -79,11 +71,10 @@ public class AndroidNotificationScheduler : INotificationScheduler
         }
     }
 
-    private (AlarmManager? alarmManager, PendingIntent? exactPendingIntent, PendingIntent? inexactPendingIntent, PendingIntent? repeatingPendingIntent, long triggerAtMillis, long delayMs, bool canUseExactAlarms, string calendarTime)
+    private static (AlarmManager? alarmManager, PendingIntent? exactPendingIntent, PendingIntent? inexactPendingIntent, PendingIntent? repeatingPendingIntent, long triggerAtMillis, long delayMs, bool canUseExactAlarms, string calendarTime)
         CreateAlarmIntents(Context context, TimeSpan time)
     {
-        var alarmManager = context.GetSystemService(Context.AlarmService) as AlarmManager;
-        if (alarmManager == null) return (null, null, null, null, 0, 0, false, string.Empty);
+        if (context.GetSystemService(Context.AlarmService) is not AlarmManager alarmManager) return (null, null, null, null, 0, 0, false, string.Empty);
 
         var calendar = Java.Util.Calendar.GetInstance(Java.Util.TimeZone.Default);
         calendar.Set(Java.Util.CalendarField.HourOfDay, time.Hours);
@@ -229,22 +220,21 @@ public class AndroidNotificationScheduler : INotificationScheduler
                     serviceIntent,
                     PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
             }
-                
-            var alarmManager = context.GetSystemService(Context.AlarmService) as AlarmManager;
-            if (alarmManager != null)
+
+            if (context.GetSystemService(Context.AlarmService) is AlarmManager alarmManager)
             {
                 if (Build.VERSION.SdkInt >= BuildVersionCodes.M)
                 {
                     alarmManager.SetExactAndAllowWhileIdle(
-                        AlarmType.RtcWakeup, 
-                        Java.Lang.JavaSystem.CurrentTimeMillis() + (long)delay.TotalMilliseconds, 
+                        AlarmType.RtcWakeup,
+                        Java.Lang.JavaSystem.CurrentTimeMillis() + (long)delay.TotalMilliseconds,
                         pendingServiceIntent);
                 }
                 else
                 {
                     alarmManager.SetExact(
-                        AlarmType.RtcWakeup, 
-                        Java.Lang.JavaSystem.CurrentTimeMillis() + (long)delay.TotalMilliseconds, 
+                        AlarmType.RtcWakeup,
+                        Java.Lang.JavaSystem.CurrentTimeMillis() + (long)delay.TotalMilliseconds,
                         pendingServiceIntent);
                 }
             }
@@ -285,7 +275,7 @@ public class AndroidNotificationScheduler : INotificationScheduler
         return true;
     }
 
-    private Task CancelAndroidNotificationsAsync()
+    private static Task CancelAndroidNotificationsAsync()
     {
         var context = AndroidApp.Context;
         var am = (AlarmManager?)context.GetSystemService(Context.AlarmService);

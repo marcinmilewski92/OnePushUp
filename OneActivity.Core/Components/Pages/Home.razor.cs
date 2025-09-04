@@ -21,7 +21,7 @@ public partial class Home : ComponentBase
         CurrentUser = await UserService.GetCurrentUserAsync();
         StateHasChanged();
     }
-    
+
     public async Task HandleEntryAdded()
     {
         StateHasChanged();

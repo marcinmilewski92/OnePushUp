@@ -7,7 +7,7 @@ public class StreakDataDto
     public int CurrentStreak { get; set; }
     public int QuantityInCurrentStreak { get; set; }
     public int TotalQuantity { get; set; }
-    
+
     public string StreakMessage => CurrentStreak switch
     {
         >= 30 => "Legendary streak!",

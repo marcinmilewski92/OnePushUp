@@ -9,20 +9,16 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace OneActivity.App.Reading;
 
 [Application]
-public class MainApplication : MauiApplication
+public class MainApplication(IntPtr handle, JniHandleOwnership ownership) : MauiApplication(handle, ownership)
 {
-    private ILogger<MainApplication> Logger => _logger ??=
-        Services.GetService<ILogger<MainApplication>>() ?? NullLogger<MainApplication>.Instance;
     private ILogger<MainApplication>? _logger;
-
-    public MainApplication(IntPtr handle, JniHandleOwnership ownership) : base(handle, ownership) {}
 
     protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
 
     public override void OnCreate()
     {
         base.OnCreate();
-        IntentFilter filter = new IntentFilter();
+        IntentFilter filter = new();
         filter.AddAction(Intent.ActionMyPackageReplaced);
         RegisterReceiver(new PackageReplacedReceiver(), filter);
 

@@ -8,18 +8,11 @@ namespace OneActivity.App.Pushups.Flavors.Pushups;
 // Polish content (PL)
 
 // Composite that switches content by chosen language
-public class PushupContentLocalized : IActivityContent
+public class PushupContentLocalized(ILanguageService languageService, PushupContentEn en, PushupContentPl pl) : IActivityContent
 {
-    private readonly ILanguageService _languageService;
-    private readonly PushupContentEn _en;
-    private readonly PushupContentPl _pl;
-
-    public PushupContentLocalized(ILanguageService languageService, PushupContentEn en, PushupContentPl pl)
-    {
-        _languageService = languageService;
-        _en = en;
-        _pl = pl;
-    }
+    private readonly ILanguageService _languageService = languageService;
+    private readonly PushupContentEn _en = en;
+    private readonly PushupContentPl _pl = pl;
 
     private IActivityContent Current =>
         _languageService.CurrentCulture.TwoLetterISOLanguageName.ToLowerInvariant() switch

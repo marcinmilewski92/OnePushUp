@@ -3,16 +3,11 @@ using OneActivity.Data;
 
 namespace OneActivity.App.Pushups.Flavors.Pushups;
 
-public class PushupContentPl : IActivityContent
+public class PushupContentPl(IGenderService genderService) : IActivityContent
 {
-    private readonly IGenderService _genderService;
+    private readonly IGenderService _genderService = genderService;
     private User? _user;
     private string _userName = "Przyjacielu";
-
-    public PushupContentPl(IGenderService genderService)
-    {
-        _genderService = genderService;
-    }
 
     public void SetUser(User user)
     {
