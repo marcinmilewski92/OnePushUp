@@ -1,60 +1,60 @@
 #if ANDROID
-using Android.App;
-using Android.Content;
+using global::Android.Content;
 using Microsoft.Extensions.Logging;
-using Microsoft.Maui.Storage;
 using OneActivity.Core.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace OneActivity.Core.Platforms.Android;
-
-public interface IAlarmScheduler
-{
-    void RestoreNotificationsAfterReboot(Context context);
-    void RescheduleForTomorrow(Context context);
-}
 
 public class AlarmScheduler : IAlarmScheduler
 {
     private readonly ILogger<AlarmScheduler> _logger;
-    private const string EnabledKey = "notifications_enabled";
-    private const string TimeKey = "notification_time";
+    private readonly NotificationService? _notificationService;
+    private readonly INotificationScheduler _scheduler;
 
-    public AlarmScheduler(ILogger<AlarmScheduler> logger) { _logger = logger; }
+    public AlarmScheduler(ILogger<AlarmScheduler> logger, INotificationScheduler scheduler)
+    {
+        _logger = logger;
+        _scheduler = scheduler;
+        _notificationService = MauiApplication.Current?.Services?.GetService<NotificationService>();
+    }
 
     public void RestoreNotificationsAfterReboot(Context context)
     {
         try
         {
-            bool enabled = Preferences.Default.Get(EnabledKey, false);
-            if (!enabled) return;
-
-            long timeTicks = Preferences.Default.Get(TimeKey, 0L);
-            if (timeTicks == 0) timeTicks = NotificationService.DefaultNotificationTime.Ticks;
-            var time = TimeSpan.FromTicks(timeTicks);
-
-            var calendar = Java.Util.Calendar.GetInstance(Java.Util.TimeZone.Default);
-            calendar.Set(Java.Util.CalendarField.HourOfDay, time.Hours);
-            calendar.Set(Java.Util.CalendarField.Minute, time.Minutes);
-            calendar.Set(Java.Util.CalendarField.Second, 0);
-            calendar.Set(Java.Util.CalendarField.Millisecond, 0);
-            if (calendar.TimeInMillis <= Java.Lang.JavaSystem.CurrentTimeMillis())
-                calendar.Add(Java.Util.CalendarField.DayOfYear, 1);
-
-            var am = (AlarmManager?)context.GetSystemService(Context.AlarmService);
-            if (am == null) return;
-
-            var intent = new Intent(context, Java.Lang.Class.FromType(typeof(NotificationReceiver)));
-            intent.SetAction(NotificationIntentConstants.ActionDailyNotification);
-            var pending = PendingIntent.GetBroadcast(context, 1, intent, PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
-
-            if (global::Android.OS.Build.VERSION.SdkInt >= global::Android.OS.BuildVersionCodes.M)
-                am.SetExactAndAllowWhileIdle(AlarmType.RtcWakeup, calendar.TimeInMillis, pending);
-            else
-                am.SetExact(AlarmType.RtcWakeup, calendar.TimeInMillis, pending);
+            _logger.LogInformation("Restoring notifications after device reboot or app update");
+            
+            // Use Task.Run to avoid blocking the main thread
+            Task.Run(async () => {
+                try
+                {
+                    if (_notificationService == null)
+                    {
+                        _logger.LogError("Failed to get NotificationService from DI container");
+                        return;
+                    }
+                    
+                    var settings = await _notificationService.GetNotificationSettingsAsync();
+                    if (settings.Enabled && settings.Time.HasValue)
+                    {
+                        await _scheduler.ScheduleAsync(settings.Time.Value);
+                        _logger.LogInformation("Successfully restored notification for {Time}", settings.Time.Value);
+                    }
+                    else
+                    {
+                        _logger.LogInformation("Notifications not enabled, skipping restoration");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error in RestoreNotificationsAfterReboot");
+                }
+            });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error restoring notifications");
+            _logger.LogError(ex, "Failed to restore notifications after reboot");
         }
     }
 
@@ -62,35 +62,34 @@ public class AlarmScheduler : IAlarmScheduler
     {
         try
         {
-            bool enabled = Preferences.Default.Get(EnabledKey, false);
-            if (!enabled) return;
-
-            long timeTicks = Preferences.Default.Get(TimeKey, 0L);
-            if (timeTicks == 0) timeTicks = NotificationService.DefaultNotificationTime.Ticks;
-            var t = TimeSpan.FromTicks(timeTicks);
-
-            var calendar = Java.Util.Calendar.GetInstance(Java.Util.TimeZone.Default);
-            calendar.Set(Java.Util.CalendarField.HourOfDay, t.Hours);
-            calendar.Set(Java.Util.CalendarField.Minute, t.Minutes);
-            calendar.Set(Java.Util.CalendarField.Second, 0);
-            calendar.Set(Java.Util.CalendarField.Millisecond, 0);
-            calendar.Add(Java.Util.CalendarField.DayOfYear, 1);
-
-            var am = (AlarmManager?)context.GetSystemService(Context.AlarmService);
-            if (am == null) return;
-
-            var intent = new Intent(context, Java.Lang.Class.FromType(typeof(NotificationReceiver)));
-            intent.SetAction(NotificationIntentConstants.ActionDailyNotification);
-            var pending = PendingIntent.GetBroadcast(context, 1, intent, PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
-
-            if (global::Android.OS.Build.VERSION.SdkInt >= global::Android.OS.BuildVersionCodes.M)
-                am.SetExactAndAllowWhileIdle(AlarmType.RtcWakeup, calendar.TimeInMillis, pending);
-            else
-                am.SetExact(AlarmType.RtcWakeup, calendar.TimeInMillis, pending);
+            _logger.LogInformation("Rescheduling notifications for tomorrow");
+            
+            // Use Task.Run to avoid blocking the main thread
+            Task.Run(async () => {
+                try
+                {
+                    if (_notificationService == null)
+                    {
+                        _logger.LogError("Failed to get NotificationService from DI container");
+                        return;
+                    }
+                    
+                    var settings = await _notificationService.GetNotificationSettingsAsync();
+                    if (settings.Enabled && settings.Time.HasValue)
+                    {
+                        await _scheduler.ScheduleAsync(settings.Time.Value);
+                        _logger.LogInformation("Successfully rescheduled notification for tomorrow at {Time}", settings.Time.Value);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error in RescheduleForTomorrow");
+                }
+            });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error rescheduling notification");
+            _logger.LogError(ex, "Failed to reschedule notification for tomorrow");
         }
     }
 }

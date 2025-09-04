@@ -1,6 +1,6 @@
 #if ANDROID
-using Android.App;
-using Android.Content;
+using global::Android.App;
+using global::Android.Content;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -30,8 +30,10 @@ public class NotificationReceiver : BroadcastReceiver
         MauiApplication.Current?.Services?.GetService<INotificationDisplayer>();
     private INotificationDisplayer? _displayer;
 
-    public override void OnReceive(Context context, Intent intent)
+    public override void OnReceive(Context? context, Intent? intent)
     {
+        if (context == null || intent == null) return;
+        
         try
         {
             var action = intent.Action;
@@ -80,4 +82,3 @@ public class NotificationReceiver : BroadcastReceiver
     }
 }
 #endif
-

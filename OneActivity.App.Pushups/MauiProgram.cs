@@ -35,6 +35,13 @@ public static class MauiProgram
         builder.Services.AddSingleton<SharedContentPl>();
         builder.Services.AddSingleton<ISharedContent, SharedContentLocalized>();
         builder.Services.AddSingleton<IActivityBranding, PushupBranding>();
+
+        #if ANDROID
+        // Register notification reliability components
+        builder.Services.AddSingleton<INotificationDisplayer, NotificationDisplayer>();
+        builder.Services.AddSingleton<IAlarmScheduler, AlarmScheduler>();
+        #endif
+
         #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();
         builder.Logging.AddDebug();

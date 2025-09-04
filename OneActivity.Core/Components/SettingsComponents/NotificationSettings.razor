@@ -1,4 +1,5 @@
 @using OneActivity.Core.Services
+@inject ISharedContent Shared
 
 <div class="card mt-4">
     <div class="card-header">
@@ -21,12 +22,37 @@
             
             @if (_notificationsEnabled)
             {
+                <div class="alert alert-info" role="alert">@Shared.NotificationReliabilityInfo</div>
                 <div class="mb-3">
                     <label for="notificationTime" class="form-label">Reminder time</label>
                     <input type="time" class="form-control" id="notificationTime"
                            step="60" value="@_notificationTimeText" @oninput="OnTimeInputChanged" />
                     <div class="form-text">
                         Use 24-hour format HH:mm (e.g., 08:00). You will receive a notification at this time every day.
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <strong>@Shared.NotificationDiagnosticsTitle</strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-2 align-items-center mb-2">
+                            <div class="col-sm-8">
+                                @Shared.ExactAlarmsAllowedLabel <strong>@(ExactAlarmAllowed == true ? "Yes" : ExactAlarmAllowed == false ? "No" : "—")</strong>
+                            </div>
+                            <div class="col-sm-4 text-sm-end">
+                                <button class="btn btn-outline-primary btn-sm" @onclick="OpenExactAlarmSettings">@Shared.OpenExactAlarmSettingsButton</button>
+                            </div>
+                        </div>
+                        <div class="row g-2 align-items-center">
+                            <div class="col-sm-8">
+                                @Shared.IgnoringBatteryOptimizationsLabel <strong>@(IgnoringBatteryOptimizations == true ? "Yes" : IgnoringBatteryOptimizations == false ? "No" : "—")</strong>
+                            </div>
+                            <div class="col-sm-4 text-sm-end">
+                                <button class="btn btn-outline-primary btn-sm" @onclick="OpenBatterySettings">@Shared.OpenBatteryOptimizationSettingsButton</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             }

@@ -22,38 +22,11 @@
             <LanguageSettings />
             <GenderSettings />
             <NotificationSettings />
-            
-            <NotificationTestCard IsTesting="@_isTestingNotification" NotificationTestMessage="@_notificationTestMessage" NotificationTestError="@_notificationTestError" OnSendTest="SendTestNotification" />
         </div>
     </div>
     
 </div>
 
 @code {
-    private bool _isTestingNotification;
-    private string _notificationTestMessage = string.Empty;
-    private bool _notificationTestError;
     
-    private async Task SendTestNotification()
-    {
-        try
-        {
-            _isTestingNotification = true;
-            _notificationTestMessage = string.Empty;
-            
-            await NotificationService.SendTestNotificationAsync();
-            
-            _notificationTestMessage = Shared.NotificationTestSuccess(DateTime.Now.ToString("HH:mm:ss"));
-            _notificationTestError = false;
-        }
-        catch (Exception ex)
-        {
-            _notificationTestMessage = $"{Shared.NotificationTestErrorPrefix} {ex.Message}";
-            _notificationTestError = true;
-        }
-        finally
-        {
-            _isTestingNotification = false;
-        }
-    }
 }

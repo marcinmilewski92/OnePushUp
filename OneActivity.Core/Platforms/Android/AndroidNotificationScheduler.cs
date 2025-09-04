@@ -1,12 +1,12 @@
 #if ANDROID
-using Android.App;
-using Android.Content;
-using Android.OS;
+using global::Android.App;
+using global::Android.Content;
+using global::Android.OS;
 using AndroidX.Core.App;
 using Microsoft.Extensions.Logging;
 using OneActivity.Core.Services;
 using Preferences = Microsoft.Maui.Storage.Preferences;
-using AndroidApp = Android.App.Application;
+using AndroidApp = global::Android.App.Application;
 
 namespace OneActivity.Core.Platforms.Android;
 
@@ -14,43 +14,26 @@ public class AndroidNotificationScheduler : INotificationScheduler
 {
     private readonly ILogger<AndroidNotificationScheduler> _logger;
     private readonly IActivityContent _content;
+    private BatteryOptimizationHelper? _batteryHelper;
     private const string LastScheduledKey = "last_notification_scheduled";
 
     public AndroidNotificationScheduler(ILogger<AndroidNotificationScheduler> logger, IActivityContent content)
     {
         _logger = logger;
         _content = content;
+        _batteryHelper = new BatteryOptimizationHelper(logger);
     }
 
-    public async Task SendTestAsync()
+    public async Task<bool> RequestBatteryOptimizationExemptionAsync()
     {
-        if (!await CheckAndRequestNotificationPermissionAsync()) return;
-        var context = AndroidApp.Context;
-        var nm = NotificationManager.FromContext(context);
-        if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
-        {
-            var channel = new NotificationChannel(NotificationDisplayer.ChannelId, $"{_content.AppName} Reminders", NotificationImportance.High)
-            {
-                Description = $"Daily reminders to {_content.Verb} your {_content.UnitPlural}",
-                LockscreenVisibility = NotificationVisibility.Public
-            };
-            channel.EnableVibration(true);
-            nm.CreateNotificationChannel(channel);
-        }
-        var launch = context.PackageManager?.GetLaunchIntentForPackage(context.PackageName) ?? new Intent(Intent.ActionMain);
-        launch.AddCategory(Intent.CategoryLauncher);
-        launch.SetPackage(context.PackageName);
-        var pending = PendingIntent.GetActivity(context, 0, launch, PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
-        var builder = new NotificationCompat.Builder(context, NotificationDisplayer.ChannelId)
-            .SetContentTitle($"{_content.AppName} Test")
-            .SetContentText($"This is a test notification - {DateTime.Now:HH:mm:ss}")
-            .SetSmallIcon(global::Android.Resource.Drawable.IcDialogInfo)
-            .SetAutoCancel(true)
-            .SetContentIntent(pending)
-            .SetPriority(NotificationCompat.PriorityHigh)
-            .SetVisibility(NotificationCompat.VisibilityPublic);
-        nm.Notify(100, builder.Build());
+        return await _batteryHelper!.RequestBatteryOptimizationExemptionAsync();
     }
+
+    public bool IsIgnoringBatteryOptimizations()
+    {
+        return _batteryHelper!.IsIgnoringBatteryOptimizations();
+    }
+
 
     public Task ScheduleAsync(TimeSpan time) => ScheduleAndroidNotificationAsync(time);
     public Task CancelAsync() => CancelAndroidNotificationsAsync();
@@ -76,6 +59,25 @@ public class AndroidNotificationScheduler : INotificationScheduler
     }
 
     private async Task<bool> EnsureNotificationPermissionAsync() => await CheckAndRequestNotificationPermissionAsync();
+
+    private static void RequestExactAlarmPermissionIfNeeded(Context context)
+    {
+        if (Build.VERSION.SdkInt >= BuildVersionCodes.S)
+        {
+            var alarmManager = context.GetSystemService(Context.AlarmService) as AlarmManager;
+            if (alarmManager != null && !alarmManager.CanScheduleExactAlarms())
+            {
+                try
+                {
+                    var intent = new Intent(global::Android.Provider.Settings.ActionRequestScheduleExactAlarm);
+                    intent.SetData(global::Android.Net.Uri.Parse($"package:{context.PackageName}"));
+                    intent.SetFlags(ActivityFlags.NewTask);
+                    context.StartActivity(intent);
+                }
+                catch { }
+            }
+        }
+    }
 
     private (AlarmManager? alarmManager, PendingIntent? exactPendingIntent, PendingIntent? inexactPendingIntent, PendingIntent? repeatingPendingIntent, long triggerAtMillis, long delayMs, bool canUseExactAlarms, string calendarTime)
         CreateAlarmIntents(Context context, TimeSpan time)
@@ -126,7 +128,9 @@ public class AndroidNotificationScheduler : INotificationScheduler
     private async Task ScheduleAndroidNotificationAsync(TimeSpan time)
     {
         if (!await EnsureNotificationPermissionAsync()) return;
+        try { if (_batteryHelper != null) await _batteryHelper.RequestBatteryOptimizationExemptionAsync(); } catch { }
         var context = AndroidApp.Context;
+        try { RequestExactAlarmPermissionIfNeeded(context); } catch { }
         await CancelAndroidNotificationsAsync();
 
         var alarmData = CreateAlarmIntents(context, time);
@@ -134,10 +138,36 @@ public class AndroidNotificationScheduler : INotificationScheduler
         var am = alarmData.alarmManager;
         var triggerAtMillis = alarmData.triggerAtMillis;
 
+        // Use AlarmClock API for higher priority alarm
         if (Build.VERSION.SdkInt >= BuildVersionCodes.M)
         {
+            try
+            {
+                // Use the package's launch intent for both apps
+                var launchIntent = context.PackageManager?.GetLaunchIntentForPackage(context.PackageName);
+                if (launchIntent != null)
+                {
+                    var pendingShowIntent = PendingIntent.GetActivity(
+                        context,
+                        0,
+                        launchIntent,
+                        PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
+
+                    // Use AlarmClock API which has higher priority
+                    var alarmInfo = new AlarmManager.AlarmClockInfo(triggerAtMillis, pendingShowIntent);
+                    am.SetAlarmClock(alarmInfo, alarmData.exactPendingIntent!);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating AlarmClock intent, falling back to standard alarms");
+            }
+            
+            // Also set exact alarm as a fallback
             if (alarmData.canUseExactAlarms)
                 am.SetExactAndAllowWhileIdle(AlarmType.RtcWakeup, triggerAtMillis, alarmData.exactPendingIntent!);
+            
+            // Set inexact alarm as another fallback
             am.Set(AlarmType.RtcWakeup, triggerAtMillis, alarmData.inexactPendingIntent!);
         }
         else
@@ -147,9 +177,112 @@ public class AndroidNotificationScheduler : INotificationScheduler
             am.Set(AlarmType.Rtc, triggerAtMillis, alarmData.inexactPendingIntent!);
         }
 
+        // Set repeating alarm as yet another fallback
         am.SetRepeating(AlarmType.RtcWakeup, triggerAtMillis, AlarmManager.IntervalDay, alarmData.repeatingPendingIntent!);
+        
+        // Schedule WorkManager backup (fires around the same time)
+        this.ScheduleWorkManagerBackup(time);
+        
+        // Schedule foreground service to start 5 minutes before notification time
+        ScheduleForegroundServiceBackup(time);
+        
         Preferences.Default.Set(LastScheduledKey, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
         Preferences.Default.Set("notification_target_time", alarmData.calendarTime);
+    }
+    
+    private void ScheduleForegroundServiceBackup(TimeSpan targetTime)
+    {
+        try
+        {
+            var context = AndroidApp.Context;
+            var now = DateTime.Now;
+            var target = new DateTime(now.Year, now.Month, now.Day, 
+                targetTime.Hours, targetTime.Minutes, targetTime.Seconds);
+                
+            // If target time is in the past, schedule for tomorrow
+            if (target <= now)
+                target = target.AddDays(1);
+                
+            // Schedule foreground service to start 5 minutes before actual notification time
+            var serviceStartTime = target.AddMinutes(-5);
+            var delay = serviceStartTime - now;
+            
+            // Don't schedule if it's too far in the future (Android may kill this alarm)
+            if (delay.TotalHours > 23)
+                return;
+                
+            var serviceIntent = new Intent(context, Java.Lang.Class.FromType(typeof(NotificationForegroundService)));
+            PendingIntent pendingServiceIntent;
+            if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
+            {
+                pendingServiceIntent = PendingIntent.GetForegroundService(
+                    context,
+                    42,
+                    serviceIntent,
+                    PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
+            }
+            else
+            {
+                pendingServiceIntent = PendingIntent.GetService(
+                    context,
+                    42,
+                    serviceIntent,
+                    PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
+            }
+                
+            var alarmManager = context.GetSystemService(Context.AlarmService) as AlarmManager;
+            if (alarmManager != null)
+            {
+                if (Build.VERSION.SdkInt >= BuildVersionCodes.M)
+                {
+                    alarmManager.SetExactAndAllowWhileIdle(
+                        AlarmType.RtcWakeup, 
+                        Java.Lang.JavaSystem.CurrentTimeMillis() + (long)delay.TotalMilliseconds, 
+                        pendingServiceIntent);
+                }
+                else
+                {
+                    alarmManager.SetExact(
+                        AlarmType.RtcWakeup, 
+                        Java.Lang.JavaSystem.CurrentTimeMillis() + (long)delay.TotalMilliseconds, 
+                        pendingServiceIntent);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to schedule foreground service backup");
+        }
+    }
+    
+    public async Task<bool> VerifyNotificationScheduledAsync()
+    {
+        var context = AndroidApp.Context;
+        var intent = new Intent(context, Java.Lang.Class.FromType(typeof(NotificationReceiver)));
+        var pending = PendingIntent.GetBroadcast(
+            context, 
+            1, 
+            intent, 
+            PendingIntentFlags.NoCreate | PendingIntentFlags.Immutable);
+        
+        // No pending intent found - alarm was canceled or never set
+        if (pending == null)
+        {
+            _logger.LogWarning("Notification alarm not found - checking if it needs to be rescheduled");
+            var settingsService = MauiApplication.Current?.Services?.GetService<NotificationService>();
+            if (settingsService != null)
+            {
+                var settings = await settingsService.GetNotificationSettingsAsync();
+                if (settings.Enabled && settings.Time.HasValue)
+                {
+                    _logger.LogWarning("Notification alarm not found - rescheduling");
+                    await ScheduleAsync(settings.Time.Value);
+                    return true;
+                }
+            }
+            return false;
+        }
+        return true;
     }
 
     private Task CancelAndroidNotificationsAsync()
@@ -157,9 +290,34 @@ public class AndroidNotificationScheduler : INotificationScheduler
         var context = AndroidApp.Context;
         var am = (AlarmManager?)context.GetSystemService(Context.AlarmService);
         if (am == null) return Task.CompletedTask;
-        var intent = new Intent(context, Java.Lang.Class.FromType(typeof(NotificationReceiver)));
-        var pending = PendingIntent.GetBroadcast(context, 1, intent, PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
-        am.Cancel(pending);
+
+        try
+        {
+            // Cancel all pending alarm variants we create (exact=1, inexact=2, repeating=3)
+            var brType = Java.Lang.Class.FromType(typeof(NotificationReceiver));
+            for (int requestCode = 1; requestCode <= 3; requestCode++)
+            {
+                var intent = new Intent(context, brType).SetAction(NotificationIntentConstants.ActionDailyNotification);
+                var pending = PendingIntent.GetBroadcast(context, requestCode, intent, PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
+                am.Cancel(pending);
+            }
+
+            // Cancel the foreground-service prewarm alarm (requestCode=42)
+            var serviceIntent = new Intent(context, Java.Lang.Class.FromType(typeof(NotificationForegroundService)));
+            var pendingService = (Build.VERSION.SdkInt >= BuildVersionCodes.O)
+                ? PendingIntent.GetForegroundService(context, 42, serviceIntent, PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable)
+                : PendingIntent.GetService(context, 42, serviceIntent, PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
+            am.Cancel(pendingService);
+
+            // Cancel the WorkManager backup job by unique name
+            try
+            {
+                AndroidX.Work.WorkManager.GetInstance(context).CancelUniqueWork("daily_notification");
+            }
+            catch { }
+        }
+        catch { }
+
         return Task.CompletedTask;
     }
 }

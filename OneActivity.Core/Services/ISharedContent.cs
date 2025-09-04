@@ -35,13 +35,11 @@ public interface ISharedContent
     string GenderMale { get; }
     string GenderFemale { get; }
 
-    // Notification testing
-    string NotificationTestingTitle { get; }
-    string NotificationTestingDescription { get; }
-    string NotificationTestingButtonIdle { get; }
-    string NotificationTestingButtonTesting { get; }
-    string LastNotificationScheduledLabel { get; }
-    string NotificationTestSuccess(string time);
-    string NotificationTestErrorPrefix { get; }
+    // Notification reliability and diagnostics
+    string NotificationReliabilityInfo { get; }
+    string NotificationDiagnosticsTitle { get; }
+    string ExactAlarmsAllowedLabel { get; }
+    string OpenExactAlarmSettingsButton { get; }
+    string IgnoringBatteryOptimizationsLabel { get; }
+    string OpenBatteryOptimizationSettingsButton { get; }
 }
-

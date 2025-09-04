@@ -1,7 +1,7 @@
 #if ANDROID
-using Android.App;
-using Android.Content;
-using Android.OS;
+using global::Android.App;
+using global::Android.Content;
+using global::Android.OS;
 using AndroidX.Core.App;
 using Microsoft.Extensions.Logging;
 using OneActivity.Core.Services;

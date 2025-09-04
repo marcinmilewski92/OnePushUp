@@ -7,7 +7,7 @@ public class PushupContentPl : IActivityContent
 {
     private readonly IGenderService _genderService;
     private User? _user;
-    private string _userName = "Kolego";
+    private string _userName = "Przyjacielu";
 
     public PushupContentPl(IGenderService genderService)
     {
@@ -22,39 +22,54 @@ public class PushupContentPl : IActivityContent
     }
 
     public string AppName => "OnePushUp";
-    public string UnitSingular => "pompka";
-    public string UnitPlural => "pompki";
+    public string UnitSingular => "pompka"; // mianownik lp.
+    public string UnitPlural => "pompki";   // mianownik l.mn. (dla 2–4)
     public string Verb => "zrobić";
     public int MinimalQuantity => 1;
 
+    // Mianownik (do samodzielnego wyświetlania liczby): 1 pompka, 2/3/4 pompki, 5+ pompek
     public string FormatQuantity(int quantity)
     {
-        var unit = quantity == 1 ? UnitSingular : UnitPlural;
-        return $"{quantity} {unit}";
+        string form = quantity == 1
+            ? "pompka"
+            : (quantity % 10 is >= 2 and <= 4 && (quantity % 100 < 10 || quantity % 100 >= 20) ? "pompki" : "pompek");
+        return $"{quantity} {form}";
+    }
+
+    // Biernik w zdaniach typu "zrobiłem X ...": 1 pompkę, 2–4 pompki, 5+ pompek
+    private static string FormatQuantityAcc(int quantity)
+    {
+        string form = quantity == 1
+            ? "pompkę"
+            : (quantity % 10 is >= 2 and <= 4 && (quantity % 100 < 10 || quantity % 100 >= 20) ? "pompki" : "pompek");
+        return $"{quantity} {form}";
     }
 
     public string DailyTitle => "Dzienne wyzwanie";
     private bool IsFemale => _genderService.Current == Gender.Female;
     private string DidVerbPast => IsFemale ? "zrobiłaś" : "zrobiłeś";
     private string RecordedPast => IsFemale ? "zapisałaś" : "zapisałeś";
-    public string PromptToday => $"Czy {DidVerbPast} dziś jedną {UnitSingular}, {_user?.NickName}?";
+    public string PromptToday => $"Czy {DidVerbPast} dziś jedną pompkę, {_user?.NickName}?";
     public string AlreadyCompletedTitle => $"Świetna robota, {_userName}! 💪";
     public string AlreadyCompletedMessage(int quantity)
     {
-        if (quantity <= 0) return $"{_userName}, {RecordedPast} 0 pompek na dziś. Spokojnie, jutro też jest dzień!";
-        if (quantity == 1) return $"{(IsFemale ? "Zrobiłaś" : "Zrobiłeś")} 1 {UnitSingular} dziś!";
-        return $"{(IsFemale ? "Zrobiłaś" : "Zrobiłeś")} {quantity} pompek dziś!";
+        if (quantity <= 0)
+            return $"{_userName}, {RecordedPast} 0 pompek na dziś. Spokojnie, jutro też jest dzień!";
+        var prefix = IsFemale ? "Zrobiłaś" : "Zrobiłeś";
+        return quantity == 1
+            ? $"{prefix} 1 pompkę dziś!"
+            : $"{prefix} {FormatQuantityAcc(quantity)} dziś!";
     }
     public string RecordedZeroTitle => "Wyzwanie zapisane";
     public string RecordedZeroMessage => $"{_userName}, {RecordedPast} 0 pompek na dziś. Spokojnie, jutro też jest dzień!";
-    public string EditEntryTitle => $"Edytuj dzisiejszy wpis: {UnitPlural}";
-    public string EditEntryPrompt => $"Zaktualizuj dzisiejszą liczbę: {UnitSingular}";
+    public string EditEntryTitle => $"Edytuj dzisiejszy wpis: pompki";
+    public string EditEntryPrompt => $"Zaktualizuj dzisiejszą liczbę pompek";
     public string UpdateSuccessMessage(bool isZero) => isZero
-        ? $"Twój wpis został zaktualizowany na 0 {UnitPlural} na dziś."
-        : $"Świetnie! Zaktualizowaliśmy Twój wpis dotyczący {UnitSingular}.";
+        ? $"Twój dzisiejszy wpis został zaktualizowany na 0 pompek."
+        : $"Świetnie! Zaktualizowaliśmy Twój dzisiejszy wynik.";
     public string SaveSuccessMessage(bool isZero) => isZero
-        ? $"Zapisaliśmy Twoją odpowiedź. Pamiętaj, nawet jedna {UnitSingular} jest lepsza niż żadna!"
-        : $"Świetnie! Zapisaliśmy Twoją {UnitSingular}.";
+        ? $"Zapisaliśmy Twoją odpowiedź. Pamiętaj – liczy się regularność. Jutro spróbuj znów!"
+        : $"Świetnie! Zapisaliśmy Twój wynik.";
 
     // Navigation + layout
     public string NavDailyGoal => "Dzienne wyzwanie";
@@ -74,7 +89,7 @@ public class PushupContentPl : IActivityContent
     public string YesText => "Tak";
     public string YesMoreText => IsFemale ? "Tak, zrobiłam więcej" : "Tak, zrobiłem więcej";
     public string NoText => "Nie";
-    public string EditOptionYesLabel => IsFemale ? $"Tak, zrobiłam {FormatQuantity(MinimalQuantity)}" : $"Tak, zrobiłem {FormatQuantity(MinimalQuantity)}";
+    public string EditOptionYesLabel => IsFemale ? "Tak, zrobiłam jedną pompkę" : "Tak, zrobiłem jedną pompkę";
     public string EditOptionYesMoreLabel => IsFemale ? "Tak, zrobiłam więcej" : "Tak, zrobiłem więcej";
     public string EditOptionNoLabel => "Nie";
     public string HowManyLabel => IsFemale ? "Ile pompek zrobiłaś?" : "Ile pompek zrobiłeś?";
@@ -88,10 +103,10 @@ public class PushupContentPl : IActivityContent
 
     // Streak labels/messages
     public string StreakDayStreakLabel => "Seria dni";
-    public string StreakUnitsInCurrentStreakLabel => "Jednostki w bieżącej serii";
-    public string StreakTotalUnitsOverallLabel => "Łącznie jednostek";
-    public string StreakMsgLegendary(int days) => $"Niesamowite! {days} dni to legenda!";
-    public string StreakMsgImpressive(int days) => $"Świetnie! {days} dni to imponujący wynik!";
+    public string StreakUnitsInCurrentStreakLabel => "Pompki w bieżącej serii";
+    public string StreakTotalUnitsOverallLabel => "Łącznie pompek";
+    public string StreakMsgLegendary(int days) => $"Niesamowicie! {days} dni – to już legenda!";
+    public string StreakMsgImpressive(int days) => $"Świetna robota! {days} dni – imponujący wynik!";
     public string StreakMsgReached(int days) => $"Brawo! Masz już {days} dni!";
     public string StreakMsgBuilding => "Tak trzymaj! Twoja seria rośnie!";
     public string StreakStartToday => "Zacznij swoją serię już dziś!";

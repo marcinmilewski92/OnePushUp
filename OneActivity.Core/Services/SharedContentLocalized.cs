@@ -37,12 +37,10 @@ public class SharedContentLocalized : ISharedContent
     public string GenderMale => Cur.GenderMale;
     public string GenderFemale => Cur.GenderFemale;
 
-    public string NotificationTestingTitle => Cur.NotificationTestingTitle;
-    public string NotificationTestingDescription => Cur.NotificationTestingDescription;
-    public string NotificationTestingButtonIdle => Cur.NotificationTestingButtonIdle;
-    public string NotificationTestingButtonTesting => Cur.NotificationTestingButtonTesting;
-    public string LastNotificationScheduledLabel => Cur.LastNotificationScheduledLabel;
-    public string NotificationTestSuccess(string time) => Cur.NotificationTestSuccess(time);
-    public string NotificationTestErrorPrefix => Cur.NotificationTestErrorPrefix;
+    public string NotificationReliabilityInfo => Cur.NotificationReliabilityInfo;
+    public string NotificationDiagnosticsTitle => Cur.NotificationDiagnosticsTitle;
+    public string ExactAlarmsAllowedLabel => Cur.ExactAlarmsAllowedLabel;
+    public string OpenExactAlarmSettingsButton => Cur.OpenExactAlarmSettingsButton;
+    public string IgnoringBatteryOptimizationsLabel => Cur.IgnoringBatteryOptimizationsLabel;
+    public string OpenBatteryOptimizationSettingsButton => Cur.OpenBatteryOptimizationSettingsButton;
 }
-

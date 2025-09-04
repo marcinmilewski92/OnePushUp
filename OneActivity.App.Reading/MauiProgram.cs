@@ -1,8 +1,16 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Maui.Storage;
+using OneActivity.Data;
+using OneActivity.Core.Repositories;
 using OneActivity.Core.Services;
 using OneActivity.App.Reading.Flavors.Reading;
+using OneActivity.Core.Hosting;
 #if ANDROID
 using OneActivity.Core.Platforms.Android;
+#endif
+#if IOS || MACCATALYST
+using OneActivity.Core.Platforms.Apple;
 #endif
 
 namespace OneActivity.App.Reading;
@@ -16,7 +24,7 @@ public static class MauiProgram
             .UseMauiApp<App>()
             .ConfigureFonts(fonts => { fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular"); });
 
-        OneActivity.Core.Hosting.OneActivityHostExtensions.UseOneActivityCore(builder, () => Path.Combine(FileSystem.AppDataDirectory, "OnePushUp.db"));
+        builder.UseOneActivityCore(() => Path.Combine(FileSystem.AppDataDirectory, "OneReading.db"));
 
         // Language-aware content providers
         builder.Services.AddSingleton<ReadingContentEn>();
@@ -27,6 +35,13 @@ public static class MauiProgram
         builder.Services.AddSingleton<SharedContentPl>();
         builder.Services.AddSingleton<ISharedContent, SharedContentLocalized>();
         builder.Services.AddSingleton<IActivityBranding, ReadingBranding>();
+
+        #if ANDROID
+        // Register notification reliability components
+        builder.Services.AddSingleton<INotificationDisplayer, NotificationDisplayer>();
+        builder.Services.AddSingleton<IAlarmScheduler, AlarmScheduler>();
+        #endif
+
         #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();
         builder.Logging.AddDebug();

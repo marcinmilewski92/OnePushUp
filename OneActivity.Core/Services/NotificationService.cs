@@ -117,9 +117,4 @@ public class NotificationService
         }
     }
 
-    public async Task SendTestNotificationAsync()
-    {
-        _logger.LogInformation("Sending test notification...");
-        await _scheduler.SendTestAsync();
-    }
 }

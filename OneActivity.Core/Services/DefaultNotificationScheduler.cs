@@ -22,10 +22,4 @@ public class DefaultNotificationScheduler : INotificationScheduler
         _logger.LogInformation("Notification cancellation is not supported on this platform");
         return Task.CompletedTask;
     }
-
-    public Task SendTestAsync()
-    {
-        _logger.LogInformation("Test notifications are not supported on this platform");
-        return Task.CompletedTask;
-    }
 }

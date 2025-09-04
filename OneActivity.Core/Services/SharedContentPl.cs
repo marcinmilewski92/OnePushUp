@@ -30,12 +30,11 @@ public class SharedContentPl : ISharedContent
     public string GenderMale => "Męska";
     public string GenderFemale => "Żeńska";
 
-    public string NotificationTestingTitle => "Test powiadomień";
-    public string NotificationTestingDescription => "Wyślij powiadomienie testowe, aby sprawdzić działanie powiadomień na urządzeniu.";
-    public string NotificationTestingButtonIdle => "Wyślij powiadomienie testowe";
-    public string NotificationTestingButtonTesting => "Testowanie...";
-    public string LastNotificationScheduledLabel => "Ostatnie zaplanowane powiadomienie:";
-    public string NotificationTestSuccess(string time) => $"Powiadomienie testowe wysłane pomyślnie o {time}";
-    public string NotificationTestErrorPrefix => "Błąd wysyłania powiadomienia testowego:";
+    // Niezawodność i diagnostyka powiadomień
+    public string NotificationReliabilityInfo => "Aby uzyskać najlepszą niezawodność na niektórych urządzeniach (np. Xiaomi, Huawei, Oppo), włącz Autostart / zezwól na działanie w tle, przyznaj uprawnienie Dokładne alarmy i wyłącz optymalizacje baterii dla aplikacji. Skorzystaj z przycisków poniżej, aby otworzyć odpowiednie ustawienia.";
+    public string NotificationDiagnosticsTitle => "Diagnostyka powiadomień";
+    public string ExactAlarmsAllowedLabel => "Dokładne alarmy dozwolone:";
+    public string OpenExactAlarmSettingsButton => "Otwórz ustawienia dokładnych alarmów";
+    public string IgnoringBatteryOptimizationsLabel => "Ignorowanie optymalizacji baterii:";
+    public string OpenBatteryOptimizationSettingsButton => "Otwórz ustawienia optymalizacji baterii";
 }
-

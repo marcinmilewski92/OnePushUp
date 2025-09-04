@@ -45,10 +45,13 @@ public static class OneActivityHostExtensions
         builder.Services.AddSingleton<INotificationScheduler, AndroidNotificationScheduler>();
         builder.Services.AddSingleton<IAlarmScheduler, AlarmScheduler>();
         builder.Services.AddSingleton<INotificationDisplayer, NotificationDisplayer>();
+        builder.Services.AddSingleton<INotificationDiagnostics, AndroidNotificationDiagnostics>();
 #elif IOS || MACCATALYST
         builder.Services.AddSingleton<INotificationScheduler, AppleNotificationScheduler>();
+        builder.Services.AddSingleton<INotificationDiagnostics, DefaultNotificationDiagnostics>();
 #else
         builder.Services.AddSingleton<INotificationScheduler, DefaultNotificationScheduler>();
+        builder.Services.AddSingleton<INotificationDiagnostics, DefaultNotificationDiagnostics>();
 #endif
 
         return builder;

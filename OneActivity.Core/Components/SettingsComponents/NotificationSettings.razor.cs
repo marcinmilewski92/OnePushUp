@@ -44,6 +44,10 @@ public partial class NotificationSettings
             }
             
             _isLoading = false;
+            if (_notificationsEnabled)
+            {
+                await LoadDiagnostics();
+            }
         }
         catch (Exception ex)
         {
@@ -90,6 +94,11 @@ public partial class NotificationSettings
                 ? "Notifications enabled successfully!" 
                 : "Notifications disabled successfully!";
             _isError = false;
+
+            if (_notificationsEnabled)
+            {
+                await LoadDiagnostics();
+            }
         }
         catch (Exception ex)
         {
@@ -120,6 +129,7 @@ public partial class NotificationSettings
 
             _message = $"Notification time updated to {_notificationTimeText}!";
             _isError = false;
+            await LoadDiagnostics();
         }
         catch (Exception ex)
         {
@@ -160,5 +170,47 @@ public partial class NotificationSettings
         }
 
         return false;
+    }
+
+    [Inject] private INotificationDiagnostics NotificationDiagnostics { get; set; } = default!;
+    protected bool? ExactAlarmAllowed { get; set; }
+    protected bool? IgnoringBatteryOptimizations { get; set; }
+
+    private async Task LoadDiagnostics()
+    {
+        try
+        {
+            ExactAlarmAllowed = await NotificationDiagnostics.IsExactAlarmAllowedAsync();
+            IgnoringBatteryOptimizations = await NotificationDiagnostics.IsIgnoringBatteryOptimizationsAsync();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed loading notification diagnostics");
+        }
+    }
+
+    private async Task OpenExactAlarmSettings()
+    {
+        try
+        {
+            await NotificationDiagnostics.OpenExactAlarmSettingsAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to open exact alarm settings");
+        }
+    }
+
+    private async Task OpenBatterySettings()
+    {
+        try
+        {
+            await NotificationDiagnostics.OpenBatteryOptimizationSettingsAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to open battery optimization settings");
+        }
     }
 }

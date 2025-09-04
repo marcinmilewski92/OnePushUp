@@ -30,12 +30,11 @@ public class SharedContentEn : ISharedContent
     public string GenderMale => "Male";
     public string GenderFemale => "Female";
 
-    public string NotificationTestingTitle => "Notification Testing";
-    public string NotificationTestingDescription => "Send a test notification to verify that notifications are working on your device.";
-    public string NotificationTestingButtonIdle => "Send Test Notification";
-    public string NotificationTestingButtonTesting => "Testing...";
-    public string LastNotificationScheduledLabel => "Last notification scheduled:";
-    public string NotificationTestSuccess(string time) => $"Test notification sent successfully at {time}";
-    public string NotificationTestErrorPrefix => "Error sending test notification:";
+    // Notification reliability and diagnostics
+    public string NotificationReliabilityInfo => "For best reliability on some devices (e.g., Xiaomi, Huawei, Oppo), enable Autostart / allow background activity, grant Exact Alarms, and exclude the app from battery optimizations. Use the buttons below to open the right settings screens.";
+    public string NotificationDiagnosticsTitle => "Notification Diagnostics";
+    public string ExactAlarmsAllowedLabel => "Exact alarms allowed:";
+    public string OpenExactAlarmSettingsButton => "Open exact alarm settings";
+    public string IgnoringBatteryOptimizationsLabel => "Ignoring battery optimizations:";
+    public string OpenBatteryOptimizationSettingsButton => "Open battery optimization settings";
 }
-

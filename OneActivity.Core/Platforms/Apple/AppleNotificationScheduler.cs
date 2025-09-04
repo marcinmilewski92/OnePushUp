@@ -17,20 +17,6 @@ public class AppleNotificationScheduler : INotificationScheduler
         _content = content;
     }
 
-    public async Task SendTestAsync()
-    {
-        if (!await EnsurePermissionAsync()) return;
-        var content = new UNMutableNotificationContent
-        {
-            Title = $"{_content.AppName} Test",
-            Body = $"This is a test notification - {DateTime.Now:HH:mm:ss}",
-            Sound = UNNotificationSound.Default
-        };
-        var trigger = UNTimeIntervalNotificationTrigger.CreateTrigger(1, false);
-        var request = UNNotificationRequest.FromIdentifier("activity_test", content, trigger);
-        await UNUserNotificationCenter.Current.AddNotificationRequestAsync(request);
-    }
-
     public async Task ScheduleAsync(TimeSpan time) => await ScheduleAsync(new[] { time });
 
     public async Task ScheduleAsync(IEnumerable<TimeSpan> times)
