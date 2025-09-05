@@ -11,7 +11,7 @@ public class ReadingContentEn : IActivityContent
     public string UnitSingular => "page";
     public string UnitPlural => "pages";
     public string Verb => "read";
-    public int MinimalQuantity => 3;
+    public int MinimalQuantity => 1;
     public string FormatQuantity(int quantity) => $"{quantity} {(quantity == 1 ? UnitSingular : UnitPlural)}";
     public string DailyTitle => "Daily Reading";
     public string PromptToday => "Did you read your 3 pages today?";
