@@ -151,7 +151,7 @@ stages:
       - task: GooglePlayRelease@4
         displayName: 'Upload to Google Play (${{ parameters.track }})'
         inputs:
-          serviceConnection: 'googleplay-conn'          # Azure DevOps Google Play service connection
+          serviceConnection: 'googleplay-connection'          # Azure DevOps Google Play service connection
           action: 'SingleBundle'
           applicationId: '$(ApplicationId)'
           bundleFile: '$(Pipeline.Workspace)/aab/*.aab'
