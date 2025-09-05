@@ -35,9 +35,15 @@
 
   <!-- Help the linker keep EF/SQLite reflection-heavy bits on Android -->
   <ItemGroup>
-    <TrimmerRootAssembly Include="Microsoft.EntityFrameworkCore" />
-    <TrimmerRootAssembly Include="Microsoft.Data.Sqlite" />
-    <TrimmerRootAssembly Include="SQLitePCLRaw.core" />
+    <TrimmerRootAssembly Include="Microsoft.EntityFrameworkCore">
+      <RootMode>Library</RootMode>
+    </TrimmerRootAssembly>
+    <TrimmerRootAssembly Include="Microsoft.Data.Sqlite">
+      <RootMode>Library</RootMode>
+    </TrimmerRootAssembly>
+    <TrimmerRootAssembly Include="SQLitePCLRaw.core">
+      <RootMode>Library</RootMode>
+    </TrimmerRootAssembly>
   </ItemGroup>
 
 </Project>
