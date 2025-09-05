@@ -1,0 +1,134 @@
+trigger: none
+pr: none
+
+pool:
+  vmImage: 'macOS-latest'
+
+# ---------- Required runtime parameters (no defaults) ----------
+parameters:
+- name: displayVersion          # e.g. 1.4.2  (REQUIRED)
+  type: string
+- name: track                   # (REQUIRED)
+  type: string
+  values: [internal, alpha, beta, production]
+- name: notesDir                # optional
+  type: string
+  default: ''
+
+# ---------- App-specific constants ----------
+variables:
+  ApplicationId: 'com.softwarecowboys.onepushup'
+  MauiProject: 'OneActivity.App.Pushups/OneActivity.App.Pushups.csproj'
+  KeystoreSecureFileName: 'myapp.keystore'
+  BuildConfiguration: 'Release'
+  TargetFramework: 'net8.0-android'
+  VersionCode: $[counter('android-oneReading', 1000)]
+
+# Compile-time variable from param
+- name: DisplayVersion
+  value: ${{ parameters.displayVersion }}
+
+stages:
+- stage: Build
+  displayName: Build AAB
+  jobs:
+  - job: ValidateInputs
+    displayName: Validate required parameters
+    steps:
+      - script: |
+          echo "Validating parameters..."
+          DV='${{ parameters.displayVersion }}'
+          TRACK='${{ parameters.track }}'
+          if [ -z "$DV" ]; then
+            echo "##vso[task.logissue type=error]Parameter 'displayVersion' is required."
+            exit 1
+          fi
+          if ! echo "$DV" | grep -Eq '^[0-9]+(\.[0-9]+){1,2}([+-][0-9A-Za-z.-]+)?$'; then
+            echo "##vso[task.logissue type=error]displayVersion '$DV' must look like 1.2 or 1.2.3 or 1.2.3-beta."
+            exit 1
+          fi
+          if [ -z "$TRACK" ]; then
+            echo "##vso[task.logissue type=error]Parameter 'track' is required."
+            exit 1
+          fi
+          echo "OK."
+        displayName: 'Fail early if params missing/invalid'
+
+  - job: BuildAndroid
+    dependsOn: ValidateInputs
+    displayName: Build Android (signed)
+    steps:
+      - checkout: self
+        clean: true
+
+      - task: UseDotNet@2
+        inputs: { packageType: 'sdk', version: '8.x' }
+        displayName: 'Use .NET 8 SDK'
+
+      - script: dotnet workload install maui
+        displayName: 'Install .NET MAUI workload'
+
+      - script: yes | sdkmanager --licenses
+        displayName: 'Accept Android SDK licenses'
+        continueOnError: true
+
+      - script: dotnet restore $(MauiProject)
+        displayName: 'Restore'
+
+      - task: DownloadSecureFile@1
+        name: keystore
+        inputs:
+          secureFile: '$(KeystoreSecureFileName)'
+
+      - script: |
+          echo "Building $(ApplicationId)"
+          echo "versionCode=$(VersionCode) displayVersion=$(DisplayVersion)"
+          dotnet publish $(MauiProject) \
+            -c $(BuildConfiguration) -f $(TargetFramework) \
+            /p:AndroidPackageFormat=aab \
+            /p:ApplicationVersion=$(VersionCode) \
+            /p:ApplicationDisplayVersion=$(DisplayVersion) \
+            /p:AndroidKeyStore=true \
+            /p:AndroidSigningKeyStore=$(keystore.secureFilePath) \
+            /p:AndroidSigningKeyAlias=$(ANDROID_KEY_ALIAS) \
+            /p:AndroidSigningStorePass=$(ANDROID_STORE_PASS) \
+            /p:AndroidSigningKeyPass=$(ANDROID_KEY_PASS)
+        displayName: 'Publish AAB (signed)'
+
+      - script: |
+          AAB=$(find $(System.DefaultWorkingDirectory) -name "*.aab" | head -n 1)
+          if [ -z "$AAB" ]; then
+            echo "##vso[task.logissue type=error]No .aab produced."
+            exit 1
+          fi
+          echo "##vso[task.setvariable variable=AAB_PATH;isOutput=true]$AAB"
+          echo "Found AAB: $AAB"
+        name: findaab
+        displayName: 'Find AAB'
+
+      - task: PublishBuildArtifacts@1
+        inputs:
+          PathtoPublish: '$(findaab.AAB_PATH)'
+          ArtifactName: 'aab'
+          publishLocation: 'Container'
+
+- stage: Release
+  displayName: Release to Google Play
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - job: PushToPlay
+    steps:
+      - download: current
+        artifact: aab
+
+      - task: GooglePlayRelease@4
+        displayName: 'Upload to Google Play (${{ parameters.track }})'
+        inputs:
+          serviceConnection: 'googleplay-conn'
+          action: 'SingleBundle'
+          applicationId: '$(ApplicationId)'
+          bundleFile: '$(Pipeline.Workspace)/aab/*.aab'
+          track: '${{ parameters.track }}'
+          userFraction: '0.1'
+          whatsNewDirectory: '${{ parameters.notesDir }}'
