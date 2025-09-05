@@ -1,5 +1,7 @@
 @using OneActivity.Core.Services
+@implements IDisposable
 @inject IGenderService Gender
+@inject ILanguageService Language
 @inject ISharedContent Shared
 @inject UserService UserService
 
@@ -47,6 +49,7 @@
     {
         _selected = Gender.Current.ToString();
         _ = LoadUserAsync();
+        Language.CultureChanged += OnCultureChanged;
     }
 
     private async Task LoadUserAsync()
@@ -63,5 +66,12 @@
                 StateHasChanged();
             }
         }
+    }
+
+    private void OnCultureChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        Language.CultureChanged -= OnCultureChanged;
     }
 }

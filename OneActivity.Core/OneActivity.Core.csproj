@@ -1,14 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net8.0-android</TargetFrameworks>
-    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('osx'))">$(TargetFrameworks);net8.0-maccatalyst</TargetFrameworks>
-    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net8.0-windows10.0.19041.0</TargetFrameworks>
+    <TargetFrameworks>net9.0;net9.0-android</TargetFrameworks>
+    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('osx'))">$(TargetFrameworks);net9.0-maccatalyst</TargetFrameworks>
+    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net9.0-windows10.0.19041.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UseMaui>true</UseMaui>
     <EnableDefaultCssItems>false</EnableDefaultCssItems>
     <RootNamespace>OneActivity.Core</RootNamespace>
+    <!-- Workaround .NET 9 Static Web Assets compression duplicates in Debug -->
+    <DisableBuildCompression Condition="'$(Configuration)' == 'Debug'">true</DisableBuildCompression>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,19 +18,26 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Maui.Controls" Version="8.0.100" />
-    <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="8.0.100" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="8.0.100" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.*" />
+    <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="9.0.*" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="9.0.*" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.*" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-android'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0-android'">
     <PackageReference Include="Xamarin.AndroidX.Work.Runtime" Version="2.8.1.3" />
   </ItemGroup>
 
   <!-- Ensure Core static web assets (wwwroot) are packaged for BlazorWebView -->
   <ItemGroup>
     <MauiAsset Include="wwwroot\**" LogicalName="wwwroot/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <!-- Help the linker keep EF/SQLite reflection-heavy bits on Android -->
+  <ItemGroup>
+    <TrimmerRootAssembly Include="Microsoft.EntityFrameworkCore" />
+    <TrimmerRootAssembly Include="Microsoft.Data.Sqlite" />
+    <TrimmerRootAssembly Include="SQLitePCLRaw.core" />
   </ItemGroup>
 
 </Project>

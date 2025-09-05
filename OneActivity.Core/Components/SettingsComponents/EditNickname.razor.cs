@@ -2,13 +2,16 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
 using OneActivity.Data;
 using OneActivity.Core.Models.Dtos;
+using OneActivity.Core.Services;
 
 namespace OneActivity.Core.Components.SettingsComponents;
 
-public partial class EditNickname
+public partial class EditNickname : IDisposable
 {
     [Inject]
     private ILogger<EditNickname> Logger { get; set; } = default!;
+    [Inject]
+    private ILanguageService Language { get; set; } = default!;
 
     private string _nickname = string.Empty;
     private bool _isLoading = true;
@@ -19,7 +22,15 @@ public partial class EditNickname
 
     protected override async Task OnInitializedAsync()
     {
+        Language.CultureChanged += OnCultureChanged;
         await LoadUserData();
+    }
+
+    private void OnCultureChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        Language.CultureChanged -= OnCultureChanged;
     }
 
     private async Task LoadUserData()

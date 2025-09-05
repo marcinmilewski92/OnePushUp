@@ -26,7 +26,8 @@ public static class OneActivityHostExtensions
             // Specify migrations assembly explicitly to avoid trimming issues on Android
             options.UseSqlite(
                 $"Data Source={path}",
-                b => b.MigrationsAssembly(typeof(OneActivityDbContext).Assembly.FullName)
+                // Use simple assembly name; more resilient across trimmer/runtime
+                b => b.MigrationsAssembly(typeof(OneActivityDbContext).Assembly.GetName().Name!)
             );
         });
         builder.Services.AddTransient<IUsersRepository, UsersRepository>();
@@ -36,6 +37,7 @@ public static class OneActivityHostExtensions
         builder.Services.AddTransient<ActivityService>();
         builder.Services.AddTransient<UserService>();
         builder.Services.AddTransient<NotificationService>();
+        builder.Services.AddSingleton<DbReadyService>();
         builder.Services.AddSingleton<DbInitializer>();
         builder.Services.AddSingleton<ILanguageService, LanguageService>();
         builder.Services.AddSingleton<IGenderService, GenderService>();

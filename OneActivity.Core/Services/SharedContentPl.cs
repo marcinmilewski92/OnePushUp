@@ -37,4 +37,18 @@ public class SharedContentPl : ISharedContent
     public string OpenExactAlarmSettingsButton => "Otwórz ustawienia dokładnych alarmów";
     public string IgnoringBatteryOptimizationsLabel => "Ignorowanie optymalizacji baterii:";
     public string OpenBatteryOptimizationSettingsButton => "Otwórz ustawienia optymalizacji baterii";
+
+    // Ustawienia powiadomień
+    public string NotificationsCardTitle => "Powiadomienia push";
+    public string NotificationsLoadingText => "Wczytywanie ustawień powiadomień...";
+    public string NotificationsEnableLabel => "Włącz codzienne przypomnienia";
+    public string NotificationsTimeLabel => "Godzina przypomnienia";
+    public string NotificationsTimeHelp => "Użyj formatu 24‑godzinnego HH:mm (np. 08:00). Otrzymasz powiadomienie o tej porze każdego dnia.";
+    public string NotificationsEnabledSuccess => "Powiadomienia włączone!";
+    public string NotificationsDisabledSuccess => "Powiadomienia wyłączone!";
+    public string InvalidTimeFormat => "Nieprawidłowy format godziny. Użyj HH:mm (np. 08:00).";
+    public string ErrorLoadingNotificationsPrefix => "Błąd wczytywania ustawień powiadomień:";
+    public string ErrorUpdatingNotificationsPrefix => "Błąd aktualizacji ustawień powiadomień:";
+    public string ErrorUpdatingNotificationTimePrefix => "Błąd aktualizacji godziny powiadomienia:";
+    public string NotificationTimeUpdated(string timeText) => $"Zmieniono godzinę powiadomienia na {timeText}!";
 }

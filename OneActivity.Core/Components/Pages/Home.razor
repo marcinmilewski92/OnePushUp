@@ -1,7 +1,11 @@
 @page "/"
 @using OneActivity.Core.Components.HomeComponents
 
-@if (CurrentUser == null)
+@if (!_dbReady)
+{
+    <p>Preparing app…</p>
+}
+else if (CurrentUser == null)
 {
     <CreateUser OnUserCreated="HandleUserCreated" />
 }

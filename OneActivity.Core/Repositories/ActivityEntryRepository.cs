@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.Sqlite;
 using OneActivity.Data;
 
 namespace OneActivity.Core.Repositories;
@@ -7,9 +8,38 @@ public class ActivityEntryRepository(OneActivityDbContext db) : IActivityEntryRe
 {
     private readonly OneActivityDbContext _db = db;
     private readonly record struct DailyTotal(DateTime Date, int Total);
+    private static bool _ensured;
+
+    private async Task EnsureActivityEntriesReadyAsync()
+    {
+        if (_ensured) return;
+        try
+        {
+            // Probe for table existence
+            await _db.Database.ExecuteSqlRawAsync("SELECT 1 FROM ActivityEntries LIMIT 0");
+            _ensured = true;
+            return;
+        }
+        catch (SqliteException ex) when (ex.SqliteErrorCode == 1)
+        {
+            // no such table: ActivityEntries -> complete migrations and retry once
+            try
+            {
+                await _db.Database.MigrateAsync();
+                await _db.Database.ExecuteSqlRawAsync("SELECT 1 FROM ActivityEntries LIMIT 0");
+                _ensured = true;
+                return;
+            }
+            catch
+            {
+                // will bubble up to callers which already surface an error message
+            }
+        }
+    }
 
     public async Task<Guid> CreateAsync(ActivityEntry entry)
     {
+        await EnsureActivityEntriesReadyAsync();
         if (entry.DateTime == default) entry.DateTime = DateTimeOffset.UtcNow;
         else if (entry.DateTime.Offset != TimeSpan.Zero) entry.DateTime = entry.DateTime.ToUniversalTime();
         var er = await _db.ActivityEntries.AddAsync(entry);
@@ -27,6 +57,7 @@ public class ActivityEntryRepository(OneActivityDbContext db) : IActivityEntryRe
 
     public async Task<bool> HasEntryForTodayAsync(Guid userId)
     {
+        await EnsureActivityEntriesReadyAsync();
         var (start, end) = ActivityEntryRepository.GetUserLocalDateRange();
         var startUtc = start.ToUniversalTime();
         var endUtc = end.ToUniversalTime();
@@ -36,6 +67,7 @@ public class ActivityEntryRepository(OneActivityDbContext db) : IActivityEntryRe
 
     public async Task<ActivityEntry?> GetEntryForTodayAsync(Guid userId)
     {
+        await EnsureActivityEntriesReadyAsync();
         var (start, end) = ActivityEntryRepository.GetUserLocalDateRange();
         var startUtc = start.ToUniversalTime();
         var endUtc = end.ToUniversalTime();
@@ -44,10 +76,11 @@ public class ActivityEntryRepository(OneActivityDbContext db) : IActivityEntryRe
     }
 
     public Task<List<ActivityEntry>> GetEntriesForUserAsync(Guid userId) =>
-        _db.ActivityEntries.AsNoTracking().Where(e => e.UserId == userId).OrderByDescending(e => e.DateTime).ToListAsync();
+        EnsureActivityEntriesReadyAsync().ContinueWith(_ => _db.ActivityEntries.AsNoTracking().Where(e => e.UserId == userId).OrderByDescending(e => e.DateTime).ToListAsync()).Unwrap();
 
     private async Task<List<DailyTotal>> GetEntriesByLocalDateAsync(Guid userId)
     {
+        await EnsureActivityEntriesReadyAsync();
         var entries = await _db.ActivityEntries.AsNoTracking().Where(e => e.UserId == userId && e.Quantity > 0).ToListAsync();
         return
         [
@@ -83,10 +116,11 @@ public class ActivityEntryRepository(OneActivityDbContext db) : IActivityEntryRe
         return dates.Sum(d => dict.GetValueOrDefault(d, 0));
     }
 
-    public Task<int> GetTotalQuantityAsync(Guid userId) => _db.ActivityEntries.AsNoTracking().Where(e => e.UserId == userId).SumAsync(e => e.Quantity);
+    public Task<int> GetTotalQuantityAsync(Guid userId) => EnsureActivityEntriesReadyAsync().ContinueWith(_ => _db.ActivityEntries.AsNoTracking().Where(e => e.UserId == userId).SumAsync(e => e.Quantity)).Unwrap();
 
     public async Task<bool> DeleteEntryForTodayAsync(Guid userId)
     {
+        await EnsureActivityEntriesReadyAsync();
         var (start, end) = ActivityEntryRepository.GetUserLocalDateRange();
         var startUtc = start.ToUniversalTime();
         var endUtc = end.ToUniversalTime();

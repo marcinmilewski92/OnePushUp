@@ -42,4 +42,18 @@ public class SharedContentLocalized(ILanguageService lang, SharedContentEn en, S
     public string OpenExactAlarmSettingsButton => Cur.OpenExactAlarmSettingsButton;
     public string IgnoringBatteryOptimizationsLabel => Cur.IgnoringBatteryOptimizationsLabel;
     public string OpenBatteryOptimizationSettingsButton => Cur.OpenBatteryOptimizationSettingsButton;
+
+    // Notifications settings localization
+    public string NotificationsCardTitle => Cur.NotificationsCardTitle;
+    public string NotificationsLoadingText => Cur.NotificationsLoadingText;
+    public string NotificationsEnableLabel => Cur.NotificationsEnableLabel;
+    public string NotificationsTimeLabel => Cur.NotificationsTimeLabel;
+    public string NotificationsTimeHelp => Cur.NotificationsTimeHelp;
+    public string NotificationsEnabledSuccess => Cur.NotificationsEnabledSuccess;
+    public string NotificationsDisabledSuccess => Cur.NotificationsDisabledSuccess;
+    public string InvalidTimeFormat => Cur.InvalidTimeFormat;
+    public string ErrorLoadingNotificationsPrefix => Cur.ErrorLoadingNotificationsPrefix;
+    public string ErrorUpdatingNotificationsPrefix => Cur.ErrorUpdatingNotificationsPrefix;
+    public string ErrorUpdatingNotificationTimePrefix => Cur.ErrorUpdatingNotificationTimePrefix;
+    public string NotificationTimeUpdated(string timeText) => Cur.NotificationTimeUpdated(timeText);
 }

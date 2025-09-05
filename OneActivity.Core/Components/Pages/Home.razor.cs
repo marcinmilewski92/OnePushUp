@@ -8,11 +8,17 @@ public partial class Home : ComponentBase
 {
     [Inject]
     public UserService UserService { get; set; } = default!;
+    [Inject]
+    public DbReadyService DbReady { get; set; } = default!;
 
     public User? CurrentUser { get; set; }
+    private bool _dbReady;
 
     protected override async Task OnInitializedAsync()
     {
+        // Ensure DB is fully initialized before querying
+        await DbReady.WaitUntilReadyAsync();
+        _dbReady = true;
         CurrentUser = await UserService.GetCurrentUserAsync();
     }
 

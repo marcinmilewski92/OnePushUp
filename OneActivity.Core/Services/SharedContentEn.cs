@@ -37,4 +37,18 @@ public class SharedContentEn : ISharedContent
     public string OpenExactAlarmSettingsButton => "Open exact alarm settings";
     public string IgnoringBatteryOptimizationsLabel => "Ignoring battery optimizations:";
     public string OpenBatteryOptimizationSettingsButton => "Open battery optimization settings";
+
+    // Notifications settings localization
+    public string NotificationsCardTitle => "Push Notifications";
+    public string NotificationsLoadingText => "Loading notification settings...";
+    public string NotificationsEnableLabel => "Enable daily reminder notifications";
+    public string NotificationsTimeLabel => "Reminder time";
+    public string NotificationsTimeHelp => "Use 24-hour format HH:mm (e.g., 08:00). You will receive a notification at this time every day.";
+    public string NotificationsEnabledSuccess => "Notifications enabled successfully!";
+    public string NotificationsDisabledSuccess => "Notifications disabled successfully!";
+    public string InvalidTimeFormat => "Invalid time format. Please use HH:mm (e.g., 08:00).";
+    public string ErrorLoadingNotificationsPrefix => "Error loading notification settings:";
+    public string ErrorUpdatingNotificationsPrefix => "Error updating notification settings:";
+    public string ErrorUpdatingNotificationTimePrefix => "Error updating notification time:";
+    public string NotificationTimeUpdated(string timeText) => $"Notification time updated to {timeText}!";
 }

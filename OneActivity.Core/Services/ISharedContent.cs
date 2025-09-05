@@ -42,4 +42,18 @@ public interface ISharedContent
     string OpenExactAlarmSettingsButton { get; }
     string IgnoringBatteryOptimizationsLabel { get; }
     string OpenBatteryOptimizationSettingsButton { get; }
+
+    // Notifications settings localization
+    string NotificationsCardTitle { get; }
+    string NotificationsLoadingText { get; }
+    string NotificationsEnableLabel { get; }
+    string NotificationsTimeLabel { get; }
+    string NotificationsTimeHelp { get; }
+    string NotificationsEnabledSuccess { get; }
+    string NotificationsDisabledSuccess { get; }
+    string InvalidTimeFormat { get; }
+    string ErrorLoadingNotificationsPrefix { get; }
+    string ErrorUpdatingNotificationsPrefix { get; }
+    string ErrorUpdatingNotificationTimePrefix { get; }
+    string NotificationTimeUpdated(string timeText);
 }

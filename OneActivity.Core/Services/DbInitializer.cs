@@ -3,18 +3,22 @@ using Microsoft.Extensions.Logging;
 using OneActivity.Data;
 using Microsoft.Data.Sqlite;
 using System;
+using SQLitePCL;
 
 namespace OneActivity.Core.Services;
 
-public class DbInitializer(IServiceProvider serviceProvider, ILogger<DbInitializer> logger)
+public class DbInitializer(IServiceProvider serviceProvider, ILogger<DbInitializer> logger, DbReadyService dbReady)
 {
     private readonly IServiceProvider _serviceProvider = serviceProvider;
     private readonly ILogger<DbInitializer> _logger = logger;
+    private readonly DbReadyService _dbReady = dbReady;
 
     public void Initialize()
     {
         try
         {
+            // Ensure SQLite native provider is initialized (Android/linker safe)
+            try { Batteries_V2.Init(); } catch { }
             using var scope = _serviceProvider.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<OneActivityDbContext>();
 
@@ -61,6 +65,56 @@ public class DbInitializer(IServiceProvider serviceProvider, ILogger<DbInitializ
                 bool hasTraining = HasTable("TrainingEntries");
                 bool hasActivity = HasTable("ActivityEntries");
                 bool hasUsers = HasTable("Users");
+
+                // Fresh DB with no schema at all: create current model via EnsureCreated, then baseline migrations
+                if (!migrationsHistoryExists && !hasTraining && !hasActivity && !hasUsers)
+                {
+                    _logger.LogInformation("No existing schema detected. Creating schema via EnsureCreated and baselining migrations…");
+                    try
+                    {
+                        dbContext.Database.EnsureCreated();
+
+                        using var tx = conn.BeginTransaction();
+                        using (var cmd = conn.CreateCommand())
+                        {
+                            cmd.Transaction = tx;
+                            cmd.CommandText = @"CREATE TABLE IF NOT EXISTS __EFMigrationsHistory (
+    MigrationId TEXT NOT NULL CONSTRAINT PK___EFMigrationsHistory PRIMARY KEY,
+    ProductVersion TEXT NOT NULL
+);";
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        void MarkApplied(string id, string productVersion)
+                        {
+                            using var cmd = conn.CreateCommand();
+                            cmd.Transaction = tx;
+                            cmd.CommandText = "INSERT OR IGNORE INTO __EFMigrationsHistory (MigrationId, ProductVersion) VALUES ($id, $ver)";
+                            cmd.Parameters.AddWithValue("$id", id);
+                            cmd.Parameters.AddWithValue("$ver", productVersion);
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        const string verBootstrap = "9.0.0";
+                        // Mark all known migrations as applied to align with current model
+                        MarkApplied("20250824105501_InitialCreate", verBootstrap);
+                        MarkApplied("20250901000000_ChangeTrainingEntryDateTimeToDateTimeOffset", verBootstrap);
+                        MarkApplied("20250902000000_RenameTrainingToActivity", verBootstrap);
+                        MarkApplied("20250903000000_AddGenderToUser", verBootstrap);
+                        tx.Commit();
+                        _logger.LogInformation("Schema created and migrations baselined for fresh database.");
+                    }
+                    catch (Exception exFresh)
+                    {
+                        _logger.LogWarning(exFresh, "Failed EnsureCreated/bootstrap path; will rely on standard migrations.");
+                    }
+
+                    // Refresh flags
+                    migrationsHistoryExists = HasTable("__EFMigrationsHistory");
+                    hasTraining = HasTable("TrainingEntries");
+                    hasActivity = HasTable("ActivityEntries");
+                    hasUsers = HasTable("Users");
+                }
                 bool hasGenderColumn = hasUsers && HasColumn("Users", "Gender");
 
                 if (!migrationsHistoryExists && (hasTraining || hasActivity || hasUsers))
@@ -88,8 +142,8 @@ public class DbInitializer(IServiceProvider serviceProvider, ILogger<DbInitializ
                         cmd.ExecuteNonQuery();
                     }
 
-                    // EF Core 8.0.19 per packages
-                    const string ver = "8.0.19";
+                    // Mark using EF Core version string (informational only)
+                    const string ver = "9.0.0";
 
                     // If we have only the old schema (TrainingEntries, Users), mark initial + datetime change as applied
                     if (hasTraining && !hasActivity)
@@ -147,7 +201,7 @@ public class DbInitializer(IServiceProvider serviceProvider, ILogger<DbInitializ
                         cmd.Parameters.AddWithValue("$ver", productVersion);
                         cmd.ExecuteNonQuery();
                     }
-                    const string ver2 = "8.0.19";
+                    const string ver2 = "9.0.0";
                     EnsureApplied("20250824105501_InitialCreate", ver2);
                     EnsureApplied("20250901000000_ChangeTrainingEntryDateTimeToDateTimeOffset", ver2);
                     EnsureApplied("20250902000000_RenameTrainingToActivity", ver2);
@@ -163,10 +217,13 @@ public class DbInitializer(IServiceProvider serviceProvider, ILogger<DbInitializ
             // Apply pending migrations
             dbContext.Database.Migrate();
             _logger.LogInformation("Database initialization completed successfully");
+            _dbReady.MarkReady();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "An error occurred while initializing the database");
+            // Avoid blocking the app forever even if init failed; UI can surface errors gracefully
+            _dbReady.MarkReady();
         }
     }
 }

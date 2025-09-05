@@ -5,7 +5,7 @@ using System.Globalization;
 
 namespace OneActivity.Core.Components.SettingsComponents;
 
-public partial class NotificationSettings
+public partial class NotificationSettings : IDisposable
 {
     [Inject]
     private NotificationService NotificationService { get; set; } = default!;
@@ -21,8 +21,14 @@ public partial class NotificationSettings
 
     protected override async Task OnInitializedAsync()
     {
+        Language.CultureChanged += OnCultureChanged;
         await LoadNotificationSettings();
     }
+
+    [Inject]
+    private ILanguageService Language { get; set; } = default!;
+
+    private void OnCultureChanged() => InvokeAsync(StateHasChanged);
 
     private async Task LoadNotificationSettings()
     {
@@ -52,7 +58,7 @@ public partial class NotificationSettings
         catch (Exception ex)
         {
             _isError = true;
-            _message = $"Error loading notification settings: {ex.Message}";
+            _message = $"{Shared.ErrorLoadingNotificationsPrefix} {ex.Message}";
             Logger.LogError(ex, "Error loading notification settings");
             _isLoading = false;
         }
@@ -91,8 +97,8 @@ public partial class NotificationSettings
             });
 
             _message = _notificationsEnabled
-                ? "Notifications enabled successfully!"
-                : "Notifications disabled successfully!";
+                ? Shared.NotificationsEnabledSuccess
+                : Shared.NotificationsDisabledSuccess;
             _isError = false;
 
             if (_notificationsEnabled)
@@ -103,7 +109,7 @@ public partial class NotificationSettings
         catch (Exception ex)
         {
             _isError = true;
-            _message = $"Error updating notification settings: {ex.Message}";
+            _message = $"{Shared.ErrorUpdatingNotificationsPrefix} {ex.Message}";
             Logger.LogError(ex, "Error updating notification settings");
         }
     }
@@ -117,7 +123,7 @@ public partial class NotificationSettings
             if (!TryParseNotificationTime(out var parsed))
             {
                 _isError = true;
-                _message = "Invalid time format. Please use HH:mm (e.g., 08:00).";
+                _message = Shared.InvalidTimeFormat;
                 return;
             }
 
@@ -127,14 +133,14 @@ public partial class NotificationSettings
                 Time = parsed
             });
 
-            _message = $"Notification time updated to {_notificationTimeText}!";
+            _message = Shared.NotificationTimeUpdated(_notificationTimeText);
             _isError = false;
             await LoadDiagnostics();
         }
         catch (Exception ex)
         {
             _isError = true;
-            _message = $"Error updating notification time: {ex.Message}";
+            _message = $"{Shared.ErrorUpdatingNotificationTimePrefix} {ex.Message}";
             Logger.LogError(ex, "Error updating notification time");
         }
     }
@@ -190,6 +196,11 @@ public partial class NotificationSettings
         {
             Logger.LogError(ex, "Failed loading notification diagnostics");
         }
+    }
+
+    public void Dispose()
+    {
+        Language.CultureChanged -= OnCultureChanged;
     }
 
     private async Task OpenExactAlarmSettings()
