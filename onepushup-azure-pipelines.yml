@@ -1,22 +1,27 @@
+# Manual-only, per-app pipeline
 trigger: none
 pr: none
 
 pool:
   vmImage: 'macOS-latest'
 
-# ---------- Required runtime parameters (no defaults) ----------
+# ---------- REQUIRED runtime parameters ----------
 parameters:
-- name: displayVersion          # e.g. 1.4.2  (REQUIRED)
+- name: displayVersion          # e.g. 1.4.2 (REQUIRED at run)
   type: string
-- name: track                   # (REQUIRED)
+- name: track                   # (REQUIRED at run)
   type: string
   values: [internal, alpha, beta, production]
-- name: notesDir                # optional
+- name: notesDir                # optional fastlane-style whatsnew dir
   type: string
   default: ''
 
-# ---------- App-specific constants (LIST form) ----------
+# ---------- Variables ----------
 variables:
+# Link your Variable Group (must contain ANDROID_KEY_ALIAS, ANDROID_STORE_PASS, ANDROID_KEY_PASS)
+- group: maui-android
+
+# App-specific constants
 - name: ApplicationId
   value: com.softwarecowboys.onepushup
 - name: MauiProject
@@ -27,10 +32,9 @@ variables:
   value: Release
 - name: TargetFramework
   value: net9.0-android
+# Seed should be (last Play versionCode + 1)
 - name: VersionCode
   value: $[counter('android-onepushup', 3)]
-- name: DisplayVersion
-  value: ${{ parameters.displayVersion }}
 
 stages:
 - stage: Build
@@ -58,16 +62,43 @@ stages:
           echo "OK."
         displayName: 'Fail early if params missing/invalid'
 
-  - job: BuildAndroid
+  - job: ValidateSecrets
     dependsOn: ValidateInputs
+    displayName: Validate required variables (secrets)
+    steps:
+      - script: |
+          echo "Validating secret variables..."
+          if [ -z "$(ANDROID_KEY_ALIAS)" ]; then
+            echo "##vso[task.logissue type=error]ANDROID_KEY_ALIAS is not set (check Variable Group)."
+            exit 1
+          fi
+          if [ -z "$(ANDROID_STORE_PASS)" ]; then
+            echo "##vso[task.logissue type=error]ANDROID_STORE_PASS is not set (secret)."
+            exit 1
+          fi
+          if [ -z "$(ANDROID_KEY_PASS)" ]; then
+            echo "##vso[task.logissue type=error]ANDROID_KEY_PASS is not set (secret)."
+            exit 1
+          fi
+          if [ -z "$(KeystoreSecureFileName)" ]; then
+            echo "##vso[task.logissue type=error]KeystoreSecureFileName is not set."
+            exit 1
+          fi
+          echo "Secrets look good."
+        displayName: 'Check required variables'
+
+  - job: BuildAndroid
+    dependsOn: ValidateSecrets
     displayName: Build Android (signed)
     steps:
       - checkout: self
         clean: true
 
       - task: UseDotNet@2
-        inputs: { packageType: 'sdk', version: '9.x' }
         displayName: 'Use .NET 9 SDK'
+        inputs:
+          packageType: sdk
+          version: 9.x
 
       - script: dotnet workload install maui
         displayName: 'Install .NET MAUI workload'
@@ -86,17 +117,8 @@ stages:
 
       - script: |
           echo "Building $(ApplicationId)"
-          echo "versionCode=$(VersionCode) displayVersion=$(DisplayVersion)"
-          dotnet publish $(MauiProject) \
-            -c $(BuildConfiguration) -f $(TargetFramework) \
-            /p:AndroidPackageFormat=aab \
-            /p:ApplicationVersion=$(VersionCode) \
-            /p:ApplicationDisplayVersion=$(DisplayVersion) \
-            /p:AndroidKeyStore=true \
-            /p:AndroidSigningKeyStore=$(keystore.secureFilePath) \
-            /p:AndroidSigningKeyAlias=$(ANDROID_KEY_ALIAS) \
-            /p:AndroidSigningStorePass=$(ANDROID_STORE_PASS) \
-            /p:AndroidSigningKeyPass=$(ANDROID_KEY_PASS)
+          echo "versionCode=$(VersionCode) displayVersion=${{ parameters.displayVersion }}"
+          dotnet publish $(MauiProject) -c $(BuildConfiguration) -f $(TargetFramework) /p:AndroidPackageFormat=aab /p:ApplicationVersion=$(VersionCode) /p:ApplicationDisplayVersion=${{ parameters.displayVersion }} /p:AndroidKeyStore=true /p:AndroidSigningKeyStore=$(keystore.secureFilePath) /p:AndroidSigningKeyAlias=$(ANDROID_KEY_ALIAS) /p:AndroidSigningStorePass=$(ANDROID_STORE_PASS) /p:AndroidSigningKeyPass=$(ANDROID_KEY_PASS)
         displayName: 'Publish AAB (signed)'
 
       - script: |
@@ -129,10 +151,10 @@ stages:
       - task: GooglePlayRelease@4
         displayName: 'Upload to Google Play (${{ parameters.track }})'
         inputs:
-          serviceConnection: 'googleplay-connection'
+          serviceConnection: 'googleplay-conn'          # Azure DevOps Google Play service connection
           action: 'SingleBundle'
           applicationId: '$(ApplicationId)'
           bundleFile: '$(Pipeline.Workspace)/aab/*.aab'
-          track: '${{ parameters.track }}'
+          track: '${{ parameters.track }}'              # internal/alpha/beta/production
           userFraction: '0.1'
           whatsNewDirectory: '${{ parameters.notesDir }}'
