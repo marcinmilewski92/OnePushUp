@@ -15,16 +15,20 @@ parameters:
   type: string
   default: ''
 
-# ---------- App-specific constants ----------
+# ---------- App-specific constants (LIST form) ----------
 variables:
-  ApplicationId: 'com.softwarecowboys.onepushup'
-  MauiProject: 'OneActivity.App.Pushups/OneActivity.App.Pushups.csproj'
-  KeystoreSecureFileName: 'myapp.keystore'
-  BuildConfiguration: 'Release'
-  TargetFramework: 'net8.0-android'
-  VersionCode: $[counter('android-oneReading', 1000)]
-
-# Compile-time variable from param
+- name: ApplicationId
+  value: com.softwarecowboys.onepushup
+- name: MauiProject
+  value: OneActivity.App.Pushups/OneActivity.App.Pushups.csproj
+- name: KeystoreSecureFileName
+  value: myapp.keystore
+- name: BuildConfiguration
+  value: Release
+- name: TargetFramework
+  value: net9.0-android
+- name: VersionCode
+  value: $[counter('android-onepushup', 3)]
 - name: DisplayVersion
   value: ${{ parameters.displayVersion }}
 
@@ -62,8 +66,8 @@ stages:
         clean: true
 
       - task: UseDotNet@2
-        inputs: { packageType: 'sdk', version: '8.x' }
-        displayName: 'Use .NET 8 SDK'
+        inputs: { packageType: 'sdk', version: '9.x' }
+        displayName: 'Use .NET 9 SDK'
 
       - script: dotnet workload install maui
         displayName: 'Install .NET MAUI workload'
@@ -78,7 +82,7 @@ stages:
       - task: DownloadSecureFile@1
         name: keystore
         inputs:
-          secureFile: '$(KeystoreSecureFileName)'
+          secureFile: $(KeystoreSecureFileName)
 
       - script: |
           echo "Building $(ApplicationId)"
