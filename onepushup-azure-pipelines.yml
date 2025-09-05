@@ -129,7 +129,7 @@ stages:
       - task: GooglePlayRelease@4
         displayName: 'Upload to Google Play (${{ parameters.track }})'
         inputs:
-          serviceConnection: 'googleplay-conn'
+          serviceConnection: 'googleplay-connection'
           action: 'SingleBundle'
           applicationId: '$(ApplicationId)'
           bundleFile: '$(Pipeline.Workspace)/aab/*.aab'
