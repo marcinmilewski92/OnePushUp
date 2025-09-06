@@ -27,16 +27,13 @@ variables:
   value: Release
 - name: TargetFramework
   value: net9.0-android
-# Seed should be (last Play versionCode + 1) — adjust if you need to resync
+# Seed should be (last Play versionCode + 1) — adjust if needed
 - name: VersionCode
   value: $[counter('android-onepushup', 2)]
 
 stages:
-# ===========================
-# Stage: Build
-# ===========================
 - stage: Build
-  displayName: Build AAB
+  displayName: Build signed AAB
   jobs:
   # --- Validate run-time parameters ---
   - job: ValidateInputs
@@ -56,10 +53,10 @@ stages:
           echo "OK."
         displayName: 'Fail early if params missing/invalid'
 
-  # --- Validate the keystore file + store password + alias ---
+  # --- Validate keystore / alias / passwords & fingerprint ---
   - job: ValidateKeystore
     dependsOn: ValidateInputs
-    displayName: Validate keystore, alias & passwords
+    displayName: Validate keystore, alias, passwords & fingerprint
     steps:
       - task: DownloadSecureFile@1
         name: keystore
@@ -90,7 +87,6 @@ stages:
           ANDROID_KEY_PASS:  $(ANDROID_KEY_PASS)
           ANDROID_KEY_ALIAS: $(ANDROID_KEY_ALIAS)
 
-      # Guard: Keystore fingerprint must match Play Console (Upload certificate)
       - bash: |
           set -euo pipefail
           EXPECT="$EXPECTED_UPLOAD_CERT_SHA1"
@@ -104,7 +100,8 @@ stages:
                 -alias "$ANDROID_KEY_ALIAS" \
                 -storepass "$ANDROID_STORE_PASS" -keypass "$ANDROID_KEY_PASS" \
                 | awk -F': ' '/SHA1:/{print $2; exit}')
-          echo "Keystore alias SHA1: $FPR"
+          echo "Expected Upload cert SHA1: $EXPECT"
+          echo "Found keystore alias SHA1: $FPR"
 
           if [ "$FPR" != "$EXPECT" ]; then
             echo "##vso[task.logissue type=error]Wrong signing key. Expected: $EXPECT, Found: $FPR"
@@ -118,7 +115,7 @@ stages:
           ANDROID_KEY_ALIAS: $(ANDROID_KEY_ALIAS)
           EXPECTED_UPLOAD_CERT_SHA1: $(EXPECTED_UPLOAD_CERT_SHA1)
 
-  # --- Build (MSBuild signing), verify & publish artifact ---
+  # --- Build (MSBuild signing), pick *-Signed.aab, verify & publish artifact ---
   - job: BuildAndroid
     dependsOn: ValidateKeystore
     displayName: Build Android (MSBuild-signed) & publish artifact
@@ -132,7 +129,7 @@ stages:
           packageType: sdk
           version: 9.x
 
-      # Install required workloads explicitly (reliable on macOS images)
+      # Install required workloads explicitly (hosted macOS)
       - bash: |
           set -e
           dotnet workload update || true
@@ -148,7 +145,7 @@ stages:
         inputs:
           secureFile: $(KeystoreSecureFileName)
 
-      # Publish to fixed staging directory with MSBuild signing (same as your local command)
+      # Publish to a fixed staging directory; sign via MSBuild (same as your local command)
       - bash: |
           set -euo pipefail
           OUT_DIR="$(Build.ArtifactStagingDirectory)/android"
@@ -168,55 +165,75 @@ stages:
             /bl:$(Build.SourcesDirectory)/maui.publish.binlog
 
           echo "Contents of $OUT_DIR:"
-          ls -la "$OUT_DIR"
+          find "$OUT_DIR" -maxdepth 3 -type f -print
         displayName: 'Publish AAB (MSBuild-signed, with binlog)'
         env:
           ANDROID_STORE_PASS: $(ANDROID_STORE_PASS)
           ANDROID_KEY_PASS:  $(ANDROID_KEY_PASS)
           ANDROID_KEY_ALIAS: $(ANDROID_KEY_ALIAS)
 
-      # Find AAB and stage to a deterministic upload filename
+      # Pick ONLY the *-Signed.aab, stage deterministic name
       - bash: |
           set -euo pipefail
-          OUT_DIR="$(Build.ArtifactStagingDirectory)/android"
-          echo "Looking for .aab in $OUT_DIR"
-          AAB=$(find "$OUT_DIR" -maxdepth 2 -type f -name "*.aab" -print -quit || true)
+          echo "Looking for signed AAB in $(Build.ArtifactStagingDirectory)/android"
+          AAB=$(find "$(Build.ArtifactStagingDirectory)/android" -type f -name "*-Signed.aab" | head -n1 || true)
 
           if [ -z "$AAB" ]; then
-            echo "No .aab in $OUT_DIR. Showing OUT_DIR files:"
-            find "$OUT_DIR" -maxdepth 2 -type f -print || true
-
-            echo "Falling back to bin path search (excluding obj):"
-            AAB=$(find "$(System.DefaultWorkingDirectory)" -type f -name "*.aab" -path "*/bin/*" ! -path "*/obj/*" -print -quit || true)
-          fi
-
-          if [ -z "$AAB" ]; then
-            echo "##vso[task.logissue type=error]No .aab produced. See binlog artifact."
+            echo "##vso[task.logissue type=error]No signed .aab (-Signed.aab) found. Did publish succeed?"
+            find "$(Build.ArtifactStagingDirectory)/android" -maxdepth 3 -type f -name "*.aab" || true
             exit 1
           fi
+
+          echo "Found signed AAB: $AAB"
+          echo "##vso[task.setvariable variable=AAB_PATH;isOutput=true]$AAB"
 
           UPLOAD_DIR="$(Build.ArtifactStagingDirectory)/upload"
           mkdir -p "$UPLOAD_DIR"
           DEST="$UPLOAD_DIR/$(ApplicationId).aab"
           cp -f "$AAB" "$DEST"
-
-          echo "##vso[task.setvariable variable=UPLOAD_AAB;isOutput=true]$DEST"
           echo "Prepared upload bundle at: $DEST"
-        name: prepupload
-        displayName: 'Stage signed AAB'
+          echo "##vso[task.setvariable variable=UPLOAD_AAB;isOutput=true]$DEST"
+        name: findaab
+        displayName: 'Find & stage signed AAB'
 
-      # Guard: AAB must be signed with expected upload key (compare SHA-1 from inside AAB)
+      # Verify AAB cert SHA-1 matches expected (robust extraction)
       - bash: |
           set -euo pipefail
-          echo "Verifying signature..."
-          jarsigner -verify -verbose -certs "$(prepupload.UPLOAD_AAB)" > /tmp/jv.txt || {
+          AAB="$(prepupload.UPLOAD_AAB 2>/dev/null || true)"
+          if [ -z "$AAB" ]; then
+            AAB="$(findaab.UPLOAD_AAB)"
+          fi
+          echo "Validating AAB: $AAB"
+
+          # Quick structural check
+          if ! zipinfo -1 "$AAB" | grep -q '^BundleConfig.pb$'; then
+            echo "##vso[task.logissue type=error]Not a valid AAB: BundleConfig.pb missing."
+            exit 1
+          fi
+          if ! zipinfo -1 "$AAB" | grep -q '^base/manifest/AndroidManifest.xml$'; then
+            echo "##vso[task.logissue type=error]Not a valid AAB: base/manifest/AndroidManifest.xml missing."
+            exit 1
+          fi
+          echo "AAB structure looks valid."
+
+          echo "Verifying signature with jarsigner..."
+          jarsigner -verify -verbose -certs "$AAB" || {
             echo "##vso[task.logissue type=error]jarsigner verification failed."
-            cat /tmp/jv.txt || true
             exit 1
           }
-          cat /tmp/jv.txt | awk '/SHA1/{print}'
-          AAB_SHA1=$(awk -F': ' '/SHA1:/{print $2; exit}' /tmp/jv.txt)
+
+          echo "Extracting signing certificate from META-INF..."
+          CERT_PATH=$(zipinfo -1 "$AAB" | grep -E '^META-INF/.*\.(RSA|DSA|EC)$' | head -n1 || true)
+          if [ -z "$CERT_PATH" ]; then
+            echo "##vso[task.logissue type=error]No signing cert found in META-INF/*.RSA|*.DSA|*.EC."
+            exit 1
+          fi
+          unzip -p "$AAB" "$CERT_PATH" > /tmp/aab-cert.der
+
+          echo "Reading SHA-1 from signing cert..."
+          AAB_SHA1=$(keytool -printcert -v -file /tmp/aab-cert.der | awk -F': ' '/SHA1:/{print $2; exit}')
           echo "AAB signature SHA1: $AAB_SHA1"
+          echo "Expected Upload cert SHA1: $EXPECTED_UPLOAD_CERT_SHA1"
 
           if [ -z "$EXPECTED_UPLOAD_CERT_SHA1" ]; then
             echo "##vso[task.logissue type=error]EXPECTED_UPLOAD_CERT_SHA1 is not set."
@@ -226,7 +243,7 @@ stages:
             echo "##vso[task.logissue type=error]AAB not signed with expected upload key. Expected: $EXPECTED_UPLOAD_CERT_SHA1, Found: $AAB_SHA1"
             exit 1
           fi
-          echo "AAB signature matches expected upload key."
+          echo "AAB signature matches expected upload key ✅"
         displayName: 'Verify AAB is signed with expected key'
         env:
           EXPECTED_UPLOAD_CERT_SHA1: $(EXPECTED_UPLOAD_CERT_SHA1)
