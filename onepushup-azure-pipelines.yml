@@ -27,7 +27,7 @@ variables:
   value: Release
 - name: TargetFramework
   value: net9.0-android
-# Seed should be (last Play versionCode + 1)
+# Seed should be (last Play versionCode + 1) — adjust if you need to resync
 - name: VersionCode
   value: $[counter('android-onepushup', 2)]
 
@@ -93,18 +93,21 @@ stages:
       # Guard: Keystore fingerprint must match Play Console (Upload certificate)
       - bash: |
           set -euo pipefail
+          EXPECT="$EXPECTED_UPLOAD_CERT_SHA1"
+          if [ -z "$EXPECT" ]; then
+            echo "##vso[task.logissue type=error]EXPECTED_UPLOAD_CERT_SHA1 is not set. Add it as a secret (Upload certificate SHA-1 from Play Console)."
+            exit 1
+          fi
+
           FPR=$(keytool -list -v \
                 -keystore "$(keystore.secureFilePath)" \
                 -alias "$ANDROID_KEY_ALIAS" \
                 -storepass "$ANDROID_STORE_PASS" -keypass "$ANDROID_KEY_PASS" \
                 | awk -F': ' '/SHA1:/{print $2; exit}')
           echo "Keystore alias SHA1: $FPR"
-          if [ -z "$EXPECTED_UPLOAD_CERT_SHA1" ]; then
-            echo "##vso[task.logissue type=error]Set EXPECTED_UPLOAD_CERT_SHA1 (Upload certificate SHA1 from Play Console)."
-            exit 1
-          fi
-          if [ "$FPR" != "$EXPECTED_UPLOAD_CERT_SHA1" ]; then
-            echo "##vso[task.logissue type=error]Wrong signing key. Expected: $EXPECTED_UPLOAD_CERT_SHA1, Found: $FPR"
+
+          if [ "$FPR" != "$EXPECT" ]; then
+            echo "##vso[task.logissue type=error]Wrong signing key. Expected: $EXPECT, Found: $FPR"
             exit 1
           fi
           echo "Keystore matches Play’s Upload certificate."
@@ -206,10 +209,19 @@ stages:
       - bash: |
           set -euo pipefail
           echo "Verifying signature..."
-          jarsigner -verify -verbose -certs "$(prepupload.UPLOAD_AAB)" > /tmp/jv.txt
+          jarsigner -verify -verbose -certs "$(prepupload.UPLOAD_AAB)" > /tmp/jv.txt || {
+            echo "##vso[task.logissue type=error]jarsigner verification failed."
+            cat /tmp/jv.txt || true
+            exit 1
+          }
           cat /tmp/jv.txt | awk '/SHA1/{print}'
           AAB_SHA1=$(awk -F': ' '/SHA1:/{print $2; exit}' /tmp/jv.txt)
           echo "AAB signature SHA1: $AAB_SHA1"
+
+          if [ -z "$EXPECTED_UPLOAD_CERT_SHA1" ]; then
+            echo "##vso[task.logissue type=error]EXPECTED_UPLOAD_CERT_SHA1 is not set."
+            exit 1
+          fi
           if [ "$AAB_SHA1" != "$EXPECTED_UPLOAD_CERT_SHA1" ]; then
             echo "##vso[task.logissue type=error]AAB not signed with expected upload key. Expected: $EXPECTED_UPLOAD_CERT_SHA1, Found: $AAB_SHA1"
             exit 1
