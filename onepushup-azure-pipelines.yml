@@ -3,9 +3,9 @@ trigger: none
 pr: none
 
 pool:
-  name: 'MacDockerPool'
+  name: 'MacDockerPool'     # your self-hosted pool
   demands:
-  - Agent.OS -equals Darwin
+  - Agent.OS -equals Linux  # because Docker agent reports Linux
 
 # ---------- REQUIRED runtime parameters ----------
 parameters:
