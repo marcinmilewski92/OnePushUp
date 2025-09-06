@@ -65,7 +65,6 @@ stages:
 
   # --- Validate the keystore file + store password + alias ---
   - job: ValidateKeystore
-    dependsOn: ValidateSecrets
     displayName: Validate keystore & alias
     steps:
       - task: DownloadSecureFile@1
