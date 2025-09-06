@@ -127,10 +127,10 @@ stages:
           ANDROID_KEY_PASS:  $(ANDROID_KEY_PASS)
           ANDROID_KEY_ALIAS: $(ANDROID_KEY_ALIAS)
 
-  # --- Build, sign & publish artifact ---
+  # --- Build (MSBuild signing) & publish artifact ---
   - job: BuildAndroid
     dependsOn: ValidateKeyPassword
-    displayName: Build Android (signed)
+    displayName: Build Android (MSBuild-signed)
     steps:
       - checkout: self
         clean: true
@@ -157,22 +157,32 @@ stages:
         inputs:
           secureFile: $(KeystoreSecureFileName)
 
-      # Publish to a fixed staging directory (use -o for reliability)
+      # Publish to a fixed staging directory and SIGN via MSBuild properties (same as your local command)
       - bash: |
           set -euo pipefail
           OUT_DIR="$(Build.ArtifactStagingDirectory)/android"
           mkdir -p "$OUT_DIR"
-          echo "Publishing to $OUT_DIR"
+          echo "Publishing (MSBuild signing) to $OUT_DIR"
           dotnet publish $(MauiProject) \
             -c $(BuildConfiguration) -f $(TargetFramework) \
-            /p:AndroidPackageFormat=aab \
+            -o "$OUT_DIR" \
             /p:ApplicationVersion=$(VersionCode) \
             /p:ApplicationDisplayVersion=${{ parameters.displayVersion }} \
-            -o "$OUT_DIR" \
+            /p:AndroidKeyStore=true \
+            /p:AndroidSigningKeyStore="$(keystore.secureFilePath)" \
+            /p:AndroidSigningStorePass="$(ANDROID_STORE_PASS)" \
+            /p:AndroidSigningKeyAlias="$(ANDROID_KEY_ALIAS)" \
+            /p:AndroidSigningKeyPass="$(ANDROID_KEY_PASS)" \
+            /p:AndroidPackageFormats=aab \
             /bl:$(Build.SourcesDirectory)/maui.publish.binlog
+
           echo "Contents of $OUT_DIR:"
           ls -la "$OUT_DIR"
-        displayName: 'Publish AAB (with binlog)'
+        displayName: 'Publish AAB (MSBuild-signed, with binlog)'
+        env:
+          ANDROID_STORE_PASS: $(ANDROID_STORE_PASS)
+          ANDROID_KEY_PASS:  $(ANDROID_KEY_PASS)
+          ANDROID_KEY_ALIAS: $(ANDROID_KEY_ALIAS)
 
       # Find the AAB deterministically (staging dir first, then safe fallback)
       - bash: |
@@ -194,40 +204,32 @@ stages:
             exit 1
           fi
 
-          echo "##vso[task.setvariable variable=AAB_PATH;isOutput=true]$AAB"
-          echo "Found AAB: $AAB"
-        name: findaab
-        displayName: 'Find AAB (staging dir, then bin fallback)'
+          # Stage to a deterministic upload filename
+          UPLOAD_DIR="$(Build.ArtifactStagingDirectory)/upload"
+          mkdir -p "$UPLOAD_DIR"
+          DEST="$UPLOAD_DIR/$(ApplicationId).aab"
+          cp -f "$AAB" "$DEST"
 
-      # Sign with jarsigner (bullet-proof) and verify
+          echo "##vso[task.setvariable variable=UPLOAD_AAB;isOutput=true]$DEST"
+          echo "Prepared upload bundle at: $DEST"
+        name: prepupload
+        displayName: 'Stage signed AAB'
+
+      # Verify signature (READ-ONLY) and print SHA-1 from inside the bundle for sanity
       - bash: |
           set -euo pipefail
-          echo "Signing bundle with jarsigner..."
-          jarsigner -verbose \
-            -sigalg SHA256withRSA -digestalg SHA-256 \
-            -keystore "$(keystore.secureFilePath)" \
-            -storepass "$ANDROID_STORE_PASS" \
-            -keypass "$ANDROID_KEY_PASS" \
-            "$(findaab.AAB_PATH)" "$ANDROID_KEY_ALIAS"
-          echo "Signed OK."
-        displayName: 'Sign AAB with jarsigner'
-        env:
-          ANDROID_STORE_PASS: $(ANDROID_STORE_PASS)
-          ANDROID_KEY_PASS:  $(ANDROID_KEY_PASS)
-          ANDROID_KEY_ALIAS: $(ANDROID_KEY_ALIAS)
-
-      - bash: |
-          set -euo pipefail
-          echo "Verifying signature..."
-          jarsigner -verify -verbose -certs "$(findaab.AAB_PATH)"
+          echo "Verifying signature of $(prepupload.UPLOAD_AAB)..."
+          jarsigner -verify -verbose -certs "$(prepupload.UPLOAD_AAB)"
           echo "Verification OK."
-        displayName: 'Verify AAB signature'
+          echo "Certificate SHA1(s) found inside the AAB:"
+          jarsigner -verify -verbose -certs "$(prepupload.UPLOAD_AAB)" | awk '/SHA1/{print}'
+        displayName: 'Verify AAB signature (inspect certs)'
 
       # Publish artifacts (AAB + binlog for troubleshooting)
       - task: PublishBuildArtifacts@1
         displayName: 'Publish AAB artifact'
         inputs:
-          PathtoPublish: '$(Build.ArtifactStagingDirectory)/android'
+          PathtoPublish: '$(Build.ArtifactStagingDirectory)/upload'
           ArtifactName: 'aab'
           publishLocation: 'Container'
 
@@ -259,7 +261,7 @@ stages:
           serviceConnection: 'googleplay-connection'    # your Google Play service connection name
           action: 'SingleBundle'
           applicationId: '$(ApplicationId)'
-          bundleFile: '$(Pipeline.Workspace)/aab/*.aab'
+          bundleFile: '$(Pipeline.Workspace)/aab/$(ApplicationId).aab'   # exact staged file
           track: '${{ parameters.track }}'              # internal/alpha/beta/production
           userFraction: '0.1'
           whatsNewDirectory: '${{ parameters.notesDir }}'
