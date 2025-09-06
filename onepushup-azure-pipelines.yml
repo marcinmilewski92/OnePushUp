@@ -34,7 +34,7 @@ variables:
   value: net9.0-android
 # Seed should be (last Play versionCode + 1)
 - name: VersionCode
-  value: $[counter('android-onepushup', 1)]
+  value: $[counter('android-onepushup', 3)]
 
 stages:
 - stage: Build
