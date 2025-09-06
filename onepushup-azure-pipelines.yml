@@ -1,4 +1,4 @@
-# Manual-only, per-app pipeline
+# Manual-only, per-app build pipeline (no release)
 trigger: none
 pr: none
 
@@ -9,16 +9,11 @@ pool:
 parameters:
 - name: displayVersion
   type: string
-- name: track
-  type: string
-  values: [internal, alpha, beta, production]
-- name: notesDir
-  type: string
-  default: ''
 
 # ---------- Variables ----------
+# Variable Group must contain:
+# ANDROID_KEY_ALIAS, ANDROID_STORE_PASS, ANDROID_KEY_PASS, EXPECTED_UPLOAD_CERT_SHA1
 variables:
-# Variable Group must contain: ANDROID_KEY_ALIAS, ANDROID_STORE_PASS, ANDROID_KEY_PASS
 - group: maui-android
 
 # App-specific constants
@@ -50,7 +45,6 @@ stages:
       - bash: |
           echo "Validating parameters..."
           DV='${{ parameters.displayVersion }}'
-          TRACK='${{ parameters.track }}'
           if [ -z "$DV" ]; then
             echo "##vso[task.logissue type=error]Parameter 'displayVersion' is required."
             exit 1
@@ -59,17 +53,13 @@ stages:
             echo "##vso[task.logissue type=error]displayVersion '$DV' must look like 1.2 or 1.2.3 or 1.2.3-beta."
             exit 1
           fi
-          if [ -z "$TRACK" ]; then
-            echo "##vso[task.logissue type=error]Parameter 'track' is required."
-            exit 1
-          fi
           echo "OK."
         displayName: 'Fail early if params missing/invalid'
 
   # --- Validate the keystore file + store password + alias ---
   - job: ValidateKeystore
     dependsOn: ValidateInputs
-    displayName: Validate keystore & alias
+    displayName: Validate keystore, alias & passwords
     steps:
       - task: DownloadSecureFile@1
         name: keystore
@@ -88,49 +78,47 @@ stages:
           fi
           echo "Store password OK."
 
-          echo "Collecting aliases..."
-          ALIASES=$(keytool -list -keystore "$(keystore.secureFilePath)" -storepass "$ANDROID_STORE_PASS" 2>/dev/null | sed -n 's/^[[:space:]]*\([^,][^,]*\),.*/\1/p')
-          echo "Found aliases: $ALIASES"
-          MATCH=0
-          for A in $ALIASES; do [ "$A" = "$ANDROID_KEY_ALIAS" ] && MATCH=1; done
-          if [ $MATCH -ne 1 ]; then
-            echo "##vso[task.logissue type=error]Alias '$ANDROID_KEY_ALIAS' not found in keystore."
-            exit 1
-          fi
-          echo "Alias exists."
-        displayName: 'Validate keystore + alias'
-        env:
-          ANDROID_STORE_PASS: $(ANDROID_STORE_PASS)
-          ANDROID_KEY_ALIAS:  $(ANDROID_KEY_ALIAS)
-
-  # --- Validate key password for the alias ---
-  - job: ValidateKeyPassword
-    dependsOn: ValidateKeystore
-    displayName: Validate key password (alias)
-    steps:
-      - task: DownloadSecureFile@1
-        name: keystore
-        inputs:
-          secureFile: $(KeystoreSecureFileName)
-
-      - bash: |
-          set -euo pipefail
-          echo "Checking KEY password for alias '$ANDROID_KEY_ALIAS'..."
+          echo "Checking alias + KEY password..."
           if ! keytool -list -keystore "$(keystore.secureFilePath)" -storepass "$ANDROID_STORE_PASS" -alias "$ANDROID_KEY_ALIAS" -keypass "$ANDROID_KEY_PASS" > /dev/null 2>&1; then
-            echo "##vso[task.logissue type=error]Key password is incorrect (ANDROID_KEY_PASS)."
+            echo "##vso[task.logissue type=error]Alias not found or key password incorrect (ANDROID_KEY_ALIAS / ANDROID_KEY_PASS)."
             exit 1
           fi
-          echo "Key password OK."
-        displayName: 'Validate key password'
+          echo "Alias and key password OK."
+        displayName: 'Validate keystore + alias + key'
         env:
           ANDROID_STORE_PASS: $(ANDROID_STORE_PASS)
           ANDROID_KEY_PASS:  $(ANDROID_KEY_PASS)
           ANDROID_KEY_ALIAS: $(ANDROID_KEY_ALIAS)
 
-  # --- Build (MSBuild signing) & publish artifact ---
+      # Guard: Keystore fingerprint must match Play Console (Upload certificate)
+      - bash: |
+          set -euo pipefail
+          FPR=$(keytool -list -v \
+                -keystore "$(keystore.secureFilePath)" \
+                -alias "$ANDROID_KEY_ALIAS" \
+                -storepass "$ANDROID_STORE_PASS" -keypass "$ANDROID_KEY_PASS" \
+                | awk -F': ' '/SHA1:/{print $2; exit}')
+          echo "Keystore alias SHA1: $FPR"
+          if [ -z "$EXPECTED_UPLOAD_CERT_SHA1" ]; then
+            echo "##vso[task.logissue type=error]Set EXPECTED_UPLOAD_CERT_SHA1 (Upload certificate SHA1 from Play Console)."
+            exit 1
+          fi
+          if [ "$FPR" != "$EXPECTED_UPLOAD_CERT_SHA1" ]; then
+            echo "##vso[task.logissue type=error]Wrong signing key. Expected: $EXPECTED_UPLOAD_CERT_SHA1, Found: $FPR"
+            exit 1
+          fi
+          echo "Keystore matches Play’s Upload certificate."
+        displayName: 'Validate upload key fingerprint (keystore)'
+        env:
+          ANDROID_STORE_PASS: $(ANDROID_STORE_PASS)
+          ANDROID_KEY_PASS:  $(ANDROID_KEY_PASS)
+          ANDROID_KEY_ALIAS: $(ANDROID_KEY_ALIAS)
+          EXPECTED_UPLOAD_CERT_SHA1: $(EXPECTED_UPLOAD_CERT_SHA1)
+
+  # --- Build (MSBuild signing), verify & publish artifact ---
   - job: BuildAndroid
-    dependsOn: ValidateKeyPassword
-    displayName: Build Android (MSBuild-signed)
+    dependsOn: ValidateKeystore
+    displayName: Build Android (MSBuild-signed) & publish artifact
     steps:
       - checkout: self
         clean: true
@@ -157,7 +145,7 @@ stages:
         inputs:
           secureFile: $(KeystoreSecureFileName)
 
-      # Publish to a fixed staging directory and SIGN via MSBuild properties (same as your local command)
+      # Publish to fixed staging directory with MSBuild signing (same as your local command)
       - bash: |
           set -euo pipefail
           OUT_DIR="$(Build.ArtifactStagingDirectory)/android"
@@ -170,9 +158,9 @@ stages:
             /p:ApplicationDisplayVersion=${{ parameters.displayVersion }} \
             /p:AndroidKeyStore=true \
             /p:AndroidSigningKeyStore="$(keystore.secureFilePath)" \
-            /p:AndroidSigningStorePass="$(ANDROID_STORE_PASS)" \
-            /p:AndroidSigningKeyAlias="$(ANDROID_KEY_ALIAS)" \
-            /p:AndroidSigningKeyPass="$(ANDROID_KEY_PASS)" \
+            /p:AndroidSigningStorePass="$ANDROID_STORE_PASS" \
+            /p:AndroidSigningKeyAlias="$ANDROID_KEY_ALIAS" \
+            /p:AndroidSigningKeyPass="$ANDROID_KEY_PASS" \
             /p:AndroidPackageFormats=aab \
             /bl:$(Build.SourcesDirectory)/maui.publish.binlog
 
@@ -184,7 +172,7 @@ stages:
           ANDROID_KEY_PASS:  $(ANDROID_KEY_PASS)
           ANDROID_KEY_ALIAS: $(ANDROID_KEY_ALIAS)
 
-      # Find the AAB deterministically (staging dir first, then safe fallback)
+      # Find AAB and stage to a deterministic upload filename
       - bash: |
           set -euo pipefail
           OUT_DIR="$(Build.ArtifactStagingDirectory)/android"
@@ -204,7 +192,6 @@ stages:
             exit 1
           fi
 
-          # Stage to a deterministic upload filename
           UPLOAD_DIR="$(Build.ArtifactStagingDirectory)/upload"
           mkdir -p "$UPLOAD_DIR"
           DEST="$UPLOAD_DIR/$(ApplicationId).aab"
@@ -215,17 +202,24 @@ stages:
         name: prepupload
         displayName: 'Stage signed AAB'
 
-      # Verify signature (READ-ONLY) and print SHA-1 from inside the bundle for sanity
+      # Guard: AAB must be signed with expected upload key (compare SHA-1 from inside AAB)
       - bash: |
           set -euo pipefail
-          echo "Verifying signature of $(prepupload.UPLOAD_AAB)..."
-          jarsigner -verify -verbose -certs "$(prepupload.UPLOAD_AAB)"
-          echo "Verification OK."
-          echo "Certificate SHA1(s) found inside the AAB:"
-          jarsigner -verify -verbose -certs "$(prepupload.UPLOAD_AAB)" | awk '/SHA1/{print}'
-        displayName: 'Verify AAB signature (inspect certs)'
+          echo "Verifying signature..."
+          jarsigner -verify -verbose -certs "$(prepupload.UPLOAD_AAB)" > /tmp/jv.txt
+          cat /tmp/jv.txt | awk '/SHA1/{print}'
+          AAB_SHA1=$(awk -F': ' '/SHA1:/{print $2; exit}' /tmp/jv.txt)
+          echo "AAB signature SHA1: $AAB_SHA1"
+          if [ "$AAB_SHA1" != "$EXPECTED_UPLOAD_CERT_SHA1" ]; then
+            echo "##vso[task.logissue type=error]AAB not signed with expected upload key. Expected: $EXPECTED_UPLOAD_CERT_SHA1, Found: $AAB_SHA1"
+            exit 1
+          fi
+          echo "AAB signature matches expected upload key."
+        displayName: 'Verify AAB is signed with expected key'
+        env:
+          EXPECTED_UPLOAD_CERT_SHA1: $(EXPECTED_UPLOAD_CERT_SHA1)
 
-      # Publish artifacts (AAB + binlog for troubleshooting)
+      # Publish artifacts (AAB + binlog)
       - task: PublishBuildArtifacts@1
         displayName: 'Publish AAB artifact'
         inputs:
@@ -240,28 +234,3 @@ stages:
           PathtoPublish: '$(Build.SourcesDirectory)/maui.publish.binlog'
           ArtifactName: 'logs'
           publishLocation: 'Container'
-
-# ===========================
-# Stage: Release
-# ===========================
-- stage: Release
-  displayName: Release to Google Play
-  dependsOn: Build
-  condition: succeeded()
-  jobs:
-  - job: PushToPlay
-    displayName: Upload to Google Play
-    steps:
-      - download: current
-        artifact: aab
-
-      - task: GooglePlayRelease@4
-        displayName: 'Upload to Google Play (${{ parameters.track }})'
-        inputs:
-          serviceConnection: 'googleplay-connection'    # your Google Play service connection name
-          action: 'SingleBundle'
-          applicationId: '$(ApplicationId)'
-          bundleFile: '$(Pipeline.Workspace)/aab/$(ApplicationId).aab'   # exact staged file
-          track: '${{ parameters.track }}'              # internal/alpha/beta/production
-          userFraction: '0.1'
-          whatsNewDirectory: '${{ parameters.notesDir }}'
