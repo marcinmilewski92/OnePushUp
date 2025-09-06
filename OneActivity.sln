@@ -9,6 +9,15 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OneActivity.App.Reading", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OneActivity.Tests", "tests\OneActivity.Tests\OneActivity.Tests.csproj", "{22223333-4444-5555-6666-777788889999}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Devops", "Devops", "{3D5C30ED-DED7-4BDF-8687-8592AB7DC37D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AzureDevopsAgent", "AzureDevopsAgent", "{865004B8-2982-4EA6-A29A-C935EF30BC7D}"
+	ProjectSection(SolutionItems) = preProject
+		Dockerfile = Dockerfile
+		start.sh = start.sh
+		docker-compose.yml = docker-compose.yml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -35,5 +44,8 @@ Global
 		{22223333-4444-5555-6666-777788889999}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{22223333-4444-5555-6666-777788889999}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{22223333-4444-5555-6666-777788889999}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{865004B8-2982-4EA6-A29A-C935EF30BC7D} = {3D5C30ED-DED7-4BDF-8687-8592AB7DC37D}
 	EndGlobalSection
 EndGlobal
