@@ -65,6 +65,7 @@ stages:
 
   # --- Validate the keystore file + store password + alias ---
   - job: ValidateKeystore
+    dependsOn: ValidateInputs
     displayName: Validate keystore & alias
     steps:
       - task: DownloadSecureFile@1
@@ -78,22 +79,25 @@ stages:
           ls -l "$(keystore.secureFilePath)"
 
           echo "Checking STORE password..."
-          if ! keytool -list -keystore "$(keystore.secureFilePath)" -storepass "$(ANDROID_STORE_PASS)" > /dev/null 2>&1; then
+          if ! keytool -list -keystore "$(keystore.secureFilePath)" -storepass "$ANDROID_STORE_PASS" > /dev/null 2>&1; then
             echo "##vso[task.logissue type=error]Keystore store password is incorrect (ANDROID_STORE_PASS)."
             exit 1
           fi
           echo "Store password OK."
 
           echo "Listing aliases..."
-          keytool -list -keystore "$(keystore.secureFilePath)" -storepass "$(ANDROID_STORE_PASS)"
+          keytool -list -keystore "$(keystore.secureFilePath)" -storepass "$ANDROID_STORE_PASS"
 
           echo "Verifying alias presence..."
-          if ! keytool -list -keystore "$(keystore.secureFilePath)" -storepass "$(ANDROID_STORE_PASS)" | grep -q "Alias name: $(ANDROID_KEY_ALIAS)"; then
-            echo "##vso[task.logissue type=error]Alias '$(ANDROID_KEY_ALIAS)' not found in keystore. Update ANDROID_KEY_ALIAS or the keystore."
+          if ! keytool -list -keystore "$(keystore.secureFilePath)" -storepass "$ANDROID_STORE_PASS" | grep -q "Alias name: $ANDROID_KEY_ALIAS"; then
+            echo "##vso[task.logissue type=error]Alias '$ANDROID_KEY_ALIAS' not found in keystore. Update ANDROID_KEY_ALIAS or the keystore."
             exit 1
           fi
           echo "Alias exists."
         displayName: 'Validate keystore + alias'
+        env:
+          ANDROID_STORE_PASS: $(ANDROID_STORE_PASS)
+          ANDROID_KEY_ALIAS:  $(ANDROID_KEY_ALIAS)
 
   # --- Validate key password for the alias ---
   - job: ValidateKeyPassword
@@ -107,13 +111,17 @@ stages:
 
       - script: |
           set -euo pipefail
-          echo "Checking KEY password for alias '$(ANDROID_KEY_ALIAS)'..."
-          if ! keytool -list -keystore "$(keystore.secureFilePath)" -storepass "$(ANDROID_STORE_PASS)" -alias "$(ANDROID_KEY_ALIAS)" -keypass "$(ANDROID_KEY_PASS)" > /dev/null 2>&1; then
-            echo "##vso[task.logissue type=error]Key password is incorrect (ANDROID_KEY_PASS) for alias '$(ANDROID_KEY_ALIAS)'."
+          echo "Checking KEY password for alias '$ANDROID_KEY_ALIAS'..."
+          if ! keytool -list -keystore "$(keystore.secureFilePath)" -storepass "$ANDROID_STORE_PASS" -alias "$ANDROID_KEY_ALIAS" -keypass "$ANDROID_KEY_PASS" > /dev/null 2>&1; then
+            echo "##vso[task.logissue type=error]Key password is incorrect (ANDROID_KEY_PASS) for alias '$ANDROID_KEY_ALIAS'."
             exit 1
           fi
           echo "Key password OK."
         displayName: 'Validate key password'
+        env:
+          ANDROID_STORE_PASS: $(ANDROID_STORE_PASS)
+          ANDROID_KEY_PASS:  $(ANDROID_KEY_PASS)
+          ANDROID_KEY_ALIAS: $(ANDROID_KEY_ALIAS)
 
   # --- Build & sign ---
   - job: BuildAndroid
@@ -147,8 +155,12 @@ stages:
       - script: |
           echo "Building $(ApplicationId)"
           echo "versionCode=$(VersionCode) displayVersion=${{ parameters.displayVersion }}"
-          dotnet publish $(MauiProject) -c $(BuildConfiguration) -f $(TargetFramework) /p:AndroidPackageFormat=aab /p:ApplicationVersion=$(VersionCode) /p:ApplicationDisplayVersion=${{ parameters.displayVersion }} /p:AndroidKeyStore=true /p:AndroidSigningKeyStore=$(keystore.secureFilePath) /p:AndroidSigningKeyAlias=$(ANDROID_KEY_ALIAS) /p:AndroidSigningStorePass=$(ANDROID_STORE_PASS) /p:AndroidSigningKeyPass=$(ANDROID_KEY_PASS)
+          dotnet publish $(MauiProject) -c $(BuildConfiguration) -f $(TargetFramework) /p:AndroidPackageFormat=aab /p:ApplicationVersion=$(VersionCode) /p:ApplicationDisplayVersion=${{ parameters.displayVersion }} /p:AndroidKeyStore=true /p:AndroidSigningKeyStore=$(keystore.secureFilePath) /p:AndroidSigningKeyAlias="$ANDROID_KEY_ALIAS" /p:AndroidSigningStorePass="$ANDROID_STORE_PASS" /p:AndroidSigningKeyPass="$ANDROID_KEY_PASS"
         displayName: 'Publish AAB (signed)'
+        env:
+          ANDROID_STORE_PASS: $(ANDROID_STORE_PASS)
+          ANDROID_KEY_PASS:  $(ANDROID_KEY_PASS)
+          ANDROID_KEY_ALIAS: $(ANDROID_KEY_ALIAS)
 
       - script: |
           AAB=$(find $(System.DefaultWorkingDirectory) -name "*.aab" | head -n 1)
