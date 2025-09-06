@@ -137,9 +137,13 @@ stages:
           packageType: sdk
           version: 9.x
 
-      # Restore workloads only for the MAUI project (avoids test project issue)
-      - bash: dotnet workload restore $(MauiProject)
-        displayName: 'Restore .NET workloads (MAUI project only)'
+      # Explicitly install workloads needed by your project (macOS supports these)
+      - bash: |
+          set -e
+          dotnet workload update || true
+          dotnet workload install android ios maccatalyst maui
+          dotnet workload list
+        displayName: 'Install MAUI workloads (android/ios/maccatalyst/maui)'
 
       - bash: dotnet restore $(MauiProject)
         displayName: 'NuGet restore (MAUI project only)'
@@ -167,6 +171,7 @@ stages:
 
       # Find the AAB
       - bash: |
+          set -euo pipefail
           OUT_DIR="$(Build.ArtifactStagingDirectory)/android"
           AAB=$(find "$OUT_DIR" -maxdepth 1 -type f -name "*.aab" -print -quit)
           if [ -z "$AAB" ]; then
