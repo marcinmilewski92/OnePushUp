@@ -175,12 +175,13 @@ stages:
       # Pick ONLY the *-Signed.aab, stage deterministic name
       - bash: |
           set -euo pipefail
-          echo "Looking for signed AAB in $(Build.ArtifactStagingDirectory)/android"
-          AAB=$(find "$(Build.ArtifactStagingDirectory)/android" -type f -name "*-Signed.aab" | head -n1 || true)
+          STAGE_DIR="$(Build.ArtifactStagingDirectory)/android"
+          echo "Looking for signed AAB in $STAGE_DIR"
+          AAB=$(find "$STAGE_DIR" -type f -name "*-Signed.aab" | head -n1 || true)
 
           if [ -z "$AAB" ]; then
             echo "##vso[task.logissue type=error]No signed .aab (-Signed.aab) found. Did publish succeed?"
-            find "$(Build.ArtifactStagingDirectory)/android" -maxdepth 3 -type f -name "*.aab" || true
+            find "$STAGE_DIR" -maxdepth 3 -type f -name "*.aab" || true
             exit 1
           fi
 
@@ -196,31 +197,32 @@ stages:
         name: findaab
         displayName: 'Find & stage signed AAB'
 
-      # Verify AAB cert SHA-1 matches expected (robust extraction)
+      # Verify AAB layout & signing (robust)
       - bash: |
           set -euo pipefail
-          AAB="$(prepupload.UPLOAD_AAB 2>/dev/null || true)"
-          if [ -z "$AAB" ]; then
-            AAB="$(findaab.UPLOAD_AAB)"
-          fi
+          AAB="$(findaab.AAB_PATH)"
           echo "Validating AAB: $AAB"
 
-          # Quick structural check
-          if ! zipinfo -1 "$AAB" | grep -q '^BundleConfig.pb$'; then
-            echo "##vso[task.logissue type=error]Not a valid AAB: BundleConfig.pb missing."
+          echo "Zip integrity test..."
+          if ! zip -T "$AAB" >/dev/null 2>&1; then
+            echo "##vso[task.logissue type=error]Zip integrity test failed for $AAB"
             exit 1
           fi
+          echo "Zip OK."
+
+          echo "Checking for base module manifest..."
           if ! zipinfo -1 "$AAB" | grep -q '^base/manifest/AndroidManifest.xml$'; then
-            echo "##vso[task.logissue type=error]Not a valid AAB: base/manifest/AndroidManifest.xml missing."
+            echo "##vso[task.logissue type=error]Not a valid AAB layout: base/manifest/AndroidManifest.xml not found."
             exit 1
           fi
-          echo "AAB structure looks valid."
+          echo "Found base/manifest/AndroidManifest.xml"
 
           echo "Verifying signature with jarsigner..."
           jarsigner -verify -verbose -certs "$AAB" || {
             echo "##vso[task.logissue type=error]jarsigner verification failed."
             exit 1
           }
+          echo "Signature verification passed."
 
           echo "Extracting signing certificate from META-INF..."
           CERT_PATH=$(zipinfo -1 "$AAB" | grep -E '^META-INF/.*\.(RSA|DSA|EC)$' | head -n1 || true)
@@ -244,7 +246,7 @@ stages:
             exit 1
           fi
           echo "AAB signature matches expected upload key ✅"
-        displayName: 'Verify AAB is signed with expected key'
+        displayName: 'Validate AAB layout & signing'
         env:
           EXPECTED_UPLOAD_CERT_SHA1: $(EXPECTED_UPLOAD_CERT_SHA1)
 
