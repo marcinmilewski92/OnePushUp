@@ -3,7 +3,8 @@ trigger: none
 pr: none
 
 pool:
-  name: 'MacDockerPool'
+  demands:
+  - Agent.OS -equals Darwin
 
 # ---------- REQUIRED runtime parameters ----------
 parameters:
