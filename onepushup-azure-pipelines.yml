@@ -12,13 +12,13 @@ parameters:
 - name: track                   # (REQUIRED at run)
   type: string
   values: [internal, alpha, beta, production]
-- name: notesDir                # required (can be empty)
+- name: notesDir                # optional (can be empty)
   type: string
   default: ''
 
 # ---------- Variables ----------
 variables:
-# Link your Variable Group (must contain ANDROID_KEY_ALIAS, ANDROID_STORE_PASS, ANDROID_KEY_PASS)
+# Variable Group must contain: ANDROID_KEY_ALIAS, ANDROID_STORE_PASS, ANDROID_KEY_PASS
 - group: maui-android
 
 # App-specific constants
@@ -40,6 +40,7 @@ stages:
 - stage: Build
   displayName: Build AAB
   jobs:
+  # --- Validate run-time parameters ---
   - job: ValidateInputs
     displayName: Validate required parameters
     steps:
@@ -62,33 +63,62 @@ stages:
           echo "OK."
         displayName: 'Fail early if params missing/invalid'
 
-  - job: ValidateSecrets
-    dependsOn: ValidateInputs
-    displayName: Validate required variables (secrets)
-    steps:
-      - script: |
-          echo "Validating secret variables..."
-          if [ -z "$(ANDROID_KEY_ALIAS)" ]; then
-            echo "##vso[task.logissue type=error]ANDROID_KEY_ALIAS is not set (check Variable Group)."
-            exit 1
-          fi
-          if [ -z "$(ANDROID_STORE_PASS)" ]; then
-            echo "##vso[task.logissue type=error]ANDROID_STORE_PASS is not set (secret)."
-            exit 1
-          fi
-          if [ -z "$(ANDROID_KEY_PASS)" ]; then
-            echo "##vso[task.logissue type=error]ANDROID_KEY_PASS is not set (secret)."
-            exit 1
-          fi
-          if [ -z "$(KeystoreSecureFileName)" ]; then
-            echo "##vso[task.logissue type=error]KeystoreSecureFileName is not set."
-            exit 1
-          fi
-          echo "Secrets look good."
-        displayName: 'Check required variables'
-
-  - job: BuildAndroid
+  # --- Validate the keystore file + store password + alias ---
+  - job: ValidateKeystore
     dependsOn: ValidateSecrets
+    displayName: Validate keystore & alias
+    steps:
+      - task: DownloadSecureFile@1
+        name: keystore
+        inputs:
+          secureFile: $(KeystoreSecureFileName)
+
+      - script: |
+          set -euo pipefail
+          echo "Keystore path: $(keystore.secureFilePath)"
+          ls -l "$(keystore.secureFilePath)"
+
+          echo "Checking STORE password..."
+          if ! keytool -list -keystore "$(keystore.secureFilePath)" -storepass "$(ANDROID_STORE_PASS)" > /dev/null 2>&1; then
+            echo "##vso[task.logissue type=error]Keystore store password is incorrect (ANDROID_STORE_PASS)."
+            exit 1
+          fi
+          echo "Store password OK."
+
+          echo "Listing aliases..."
+          keytool -list -keystore "$(keystore.secureFilePath)" -storepass "$(ANDROID_STORE_PASS)"
+
+          echo "Verifying alias presence..."
+          if ! keytool -list -keystore "$(keystore.secureFilePath)" -storepass "$(ANDROID_STORE_PASS)" | grep -q "Alias name: $(ANDROID_KEY_ALIAS)"; then
+            echo "##vso[task.logissue type=error]Alias '$(ANDROID_KEY_ALIAS)' not found in keystore. Update ANDROID_KEY_ALIAS or the keystore."
+            exit 1
+          fi
+          echo "Alias exists."
+        displayName: 'Validate keystore + alias'
+
+  # --- Validate key password for the alias ---
+  - job: ValidateKeyPassword
+    dependsOn: ValidateKeystore
+    displayName: Validate key password (alias)
+    steps:
+      - task: DownloadSecureFile@1
+        name: keystore
+        inputs:
+          secureFile: $(KeystoreSecureFileName)
+
+      - script: |
+          set -euo pipefail
+          echo "Checking KEY password for alias '$(ANDROID_KEY_ALIAS)'..."
+          if ! keytool -list -keystore "$(keystore.secureFilePath)" -storepass "$(ANDROID_STORE_PASS)" -alias "$(ANDROID_KEY_ALIAS)" -keypass "$(ANDROID_KEY_PASS)" > /dev/null 2>&1; then
+            echo "##vso[task.logissue type=error]Key password is incorrect (ANDROID_KEY_PASS) for alias '$(ANDROID_KEY_ALIAS)'."
+            exit 1
+          fi
+          echo "Key password OK."
+        displayName: 'Validate key password'
+
+  # --- Build & sign ---
+  - job: BuildAndroid
+    dependsOn: ValidateKeyPassword
     displayName: Build Android (signed)
     steps:
       - checkout: self
@@ -114,14 +144,6 @@ stages:
         name: keystore
         inputs:
           secureFile: $(KeystoreSecureFileName)
-
-      # >>> Added keystore inspection step here <<<
-      - script: |
-          echo "Inspecting keystore at: $(keystore.secureFilePath)"
-          ls -l "$(keystore.secureFilePath)"
-          # List aliases to verify ANDROID_KEY_ALIAS matches one of them:
-          keytool -list -v -keystore "$(keystore.secureFilePath)" -storepass "$(ANDROID_STORE_PASS)" | sed -n '1,120p'
-        displayName: 'Inspect keystore (list aliases)'
 
       - script: |
           echo "Building $(ApplicationId)"
@@ -159,10 +181,10 @@ stages:
       - task: GooglePlayRelease@4
         displayName: 'Upload to Google Play (${{ parameters.track }})'
         inputs:
-          serviceConnection: 'googleplay-connection'          # Azure DevOps Google Play service connection
+          serviceConnection: 'googleplay-connection'
           action: 'SingleBundle'
           applicationId: '$(ApplicationId)'
           bundleFile: '$(Pipeline.Workspace)/aab/*.aab'
-          track: '${{ parameters.track }}'              # internal/alpha/beta/production
+          track: '${{ parameters.track }}'
           userFraction: '0.1'
           whatsNewDirectory: '${{ parameters.notesDir }}'
