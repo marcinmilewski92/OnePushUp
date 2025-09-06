@@ -34,7 +34,7 @@ variables:
   value: net9.0-android
 # Seed should be (last Play versionCode + 1)
 - name: VersionCode
-  value: $[counter('android-onepushup', 3)]
+  value: $[counter('android-onepushup', 1)]
 
 stages:
 - stage: Build
@@ -85,11 +85,20 @@ stages:
           fi
           echo "Store password OK."
 
-          echo "Listing aliases..."
-          keytool -list -keystore "$(keystore.secureFilePath)" -storepass "$ANDROID_STORE_PASS"
+          echo "Collecting aliases (verbose format)..."
+          ALIASES=$(keytool -list -v -keystore "$(keystore.secureFilePath)" -storepass "$ANDROID_STORE_PASS" 2>/dev/null | awk -F': ' '/^Alias name: /{print $2}')
+          if [ -z "$ALIASES" ]; then
+            echo "Fallback to compact format..."
+            # Example line: "myalias, Aug 25, 2025, PrivateKeyEntry,"
+            ALIASES=$(keytool -list -keystore "$(keystore.secureFilePath)" -storepass "$ANDROID_STORE_PASS" 2>/dev/null | sed -n 's/^[[:space:]]*\([^,][^,]*\),.*/\1/p')
+          fi
 
-          echo "Verifying alias presence..."
-          if ! keytool -list -keystore "$(keystore.secureFilePath)" -storepass "$ANDROID_STORE_PASS" | grep -q "Alias name: $ANDROID_KEY_ALIAS"; then
+          echo "Found aliases: $ALIASES"
+          MATCH=0
+          for A in $ALIASES; do
+            if [ "$A" = "$ANDROID_KEY_ALIAS" ]; then MATCH=1; fi
+          done
+          if [ $MATCH -ne 1 ]; then
             echo "##vso[task.logissue type=error]Alias '$ANDROID_KEY_ALIAS' not found in keystore. Update ANDROID_KEY_ALIAS or the keystore."
             exit 1
           fi
