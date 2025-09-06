@@ -84,13 +84,8 @@ stages:
           fi
           echo "Store password OK."
 
-          echo "Collecting aliases (verbose format)..."
-          ALIASES=$(keytool -list -v -keystore "$(keystore.secureFilePath)" -storepass "$ANDROID_STORE_PASS" 2>/dev/null | awk -F': ' '/^Alias name: /{print $2}')
-          if [ -z "$ALIASES" ]; then
-            echo "Fallback to compact format..."
-            ALIASES=$(keytool -list -keystore "$(keystore.secureFilePath)" -storepass "$ANDROID_STORE_PASS" 2>/dev/null | sed -n 's/^[[:space:]]*\([^,][^,]*\),.*/\1/p')
-          fi
-
+          echo "Collecting aliases..."
+          ALIASES=$(keytool -list -keystore "$(keystore.secureFilePath)" -storepass "$ANDROID_STORE_PASS" 2>/dev/null | sed -n 's/^[[:space:]]*\([^,][^,]*\),.*/\1/p')
           echo "Found aliases: $ALIASES"
           MATCH=0
           for A in $ALIASES; do [ "$A" = "$ANDROID_KEY_ALIAS" ] && MATCH=1; done
@@ -118,7 +113,7 @@ stages:
           set -euo pipefail
           echo "Checking KEY password for alias '$ANDROID_KEY_ALIAS'..."
           if ! keytool -list -keystore "$(keystore.secureFilePath)" -storepass "$ANDROID_STORE_PASS" -alias "$ANDROID_KEY_ALIAS" -keypass "$ANDROID_KEY_PASS" > /dev/null 2>&1; then
-            echo "##vso[task.logissue type=error]Key password is incorrect (ANDROID_KEY_PASS) for alias '$ANDROID_KEY_ALIAS'."
+            echo "##vso[task.logissue type=error]Key password is incorrect (ANDROID_KEY_PASS)."
             exit 1
           fi
           echo "Key password OK."
@@ -142,11 +137,12 @@ stages:
           packageType: sdk
           version: 9.x
 
-      - bash: dotnet workload restore
-        displayName: 'Restore .NET workloads (project)'
+      # Restore workloads only for the MAUI project (avoids test project issue)
+      - bash: dotnet workload restore $(MauiProject)
+        displayName: 'Restore .NET workloads (MAUI project only)'
 
       - bash: dotnet restore $(MauiProject)
-        displayName: 'Restore'
+        displayName: 'NuGet restore (MAUI project only)'
 
       - task: DownloadSecureFile@1
         name: keystore
@@ -169,9 +165,8 @@ stages:
           ls -l "$OUT_DIR"
         displayName: 'Publish AAB'
 
-      # Find the AAB only in the staging dir
+      # Find the AAB
       - bash: |
-          set -euo pipefail
           OUT_DIR="$(Build.ArtifactStagingDirectory)/android"
           AAB=$(find "$OUT_DIR" -maxdepth 1 -type f -name "*.aab" -print -quit)
           if [ -z "$AAB" ]; then
@@ -183,11 +178,11 @@ stages:
         name: findaab
         displayName: 'Find AAB (staging dir)'
 
-      # Explicitly sign with jarsigner (deterministic)
+      # Sign with jarsigner
       - bash: |
           set -euo pipefail
           echo "Signing bundle with jarsigner..."
-          /usr/bin/jarsigner -verbose \
+          jarsigner -verbose \
             -sigalg SHA256withRSA -digestalg SHA-256 \
             -keystore "$(keystore.secureFilePath)" \
             -storepass "$ANDROID_STORE_PASS" \
@@ -204,11 +199,11 @@ stages:
       - bash: |
           set -euo pipefail
           echo "Verifying signature..."
-          /usr/bin/jarsigner -verify -verbose -certs "$(findaab.AAB_PATH)"
+          jarsigner -verify -verbose -certs "$(findaab.AAB_PATH)"
           echo "Verification OK."
         displayName: 'Verify AAB signature'
 
-      # Publish the whole staging dir as the artifact
+      # Publish artifact
       - task: PublishBuildArtifacts@1
         inputs:
           PathtoPublish: '$(Build.ArtifactStagingDirectory)/android'
