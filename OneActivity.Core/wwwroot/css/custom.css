@@ -136,9 +136,27 @@ article.content {
   border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
-.btn-autumn-nav:hover, .btn-autumn-nav.active {
+/* Only apply :hover highlight on devices that actually support hover
+   to avoid sticky hover on Android back navigation */
+@media (hover: hover) and (pointer: fine) {
+  .btn-autumn-nav:hover {
+    background-color: var(--primary-color);
+    color: #fff;
+  }
+}
+
+/* Keep route-based active state globally */
+.btn-autumn-nav.active {
   background-color: var(--primary-color);
   color: #fff;
+}
+
+/* On touch devices, ensure :hover does not change appearance */
+@media (hover: none), (pointer: coarse) {
+  .btn-autumn-nav:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: var(--text-light);
+  }
 }
 
 .btn-autumn-nav i {
