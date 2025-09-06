@@ -12,7 +12,7 @@ parameters:
 - name: track                   # (REQUIRED at run)
   type: string
   values: [internal, alpha, beta, production]
-- name: notesDir                # optional fastlane-style whatsnew dir
+- name: notesDir                # required (can be empty)
   type: string
   default: ''
 
@@ -114,6 +114,14 @@ stages:
         name: keystore
         inputs:
           secureFile: $(KeystoreSecureFileName)
+
+      # >>> Added keystore inspection step here <<<
+      - script: |
+          echo "Inspecting keystore at: $(keystore.secureFilePath)"
+          ls -l "$(keystore.secureFilePath)"
+          # List aliases to verify ANDROID_KEY_ALIAS matches one of them:
+          keytool -list -v -keystore "$(keystore.secureFilePath)" -storepass "$(ANDROID_STORE_PASS)" | sed -n '1,120p'
+        displayName: 'Inspect keystore (list aliases)'
 
       - script: |
           echo "Building $(ApplicationId)"
