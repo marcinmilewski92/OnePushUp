@@ -1,32 +1,21 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-: "${AZP_URL:?Set AZP_URL env var (e.g. https://dev.azure.com/yourorg)}"
-: "${AZP_TOKEN:?Set AZP_TOKEN env var (PAT with Agent Pools (Read & manage))}"
+: "${AZP_URL:?Set AZP_URL (e.g. https://dev.azure.com/your-org)}"
+: "${AZP_TOKEN:?Set AZP_TOKEN (PAT with Agent Pools (Read & manage))}"
+
 AZP_POOL="${AZP_POOL:-Default}"
 AZP_AGENT_NAME="${AZP_AGENT_NAME:-$(hostname)}"
 AZP_WORK="${AZP_WORK:-_work}"
-AGENT_VERSION="${AGENT_VERSION:-3.248.0}"
 
-# Detect arch (Intel vs Apple Silicon)
-arch="$(uname -m)"
-case "$arch" in
-  x86_64) AGENT_ARCH="x64" ;;
-  aarch64|arm64) AGENT_ARCH="arm64" ;;
-  *) echo "Unsupported arch: $arch"; exit 1 ;;
-esac
+# Let the agent (and tool installers) know where to cache tools
+export AGENT_TOOLSDIRECTORY="${AGENT_TOOLSDIRECTORY:-/azp/_work/_tool}"
 
-cd /azp
+# Make sure mounted paths exist and are owned by the 'agent' user
+sudo mkdir -p "/azp/${AZP_WORK}" "$AGENT_TOOLSDIRECTORY"
+sudo chown -R agent:agent "/azp/${AZP_WORK}" "$AGENT_TOOLSDIRECTORY"
 
-if [ ! -d "/azp/agent" ]; then
-  echo "Downloading Azure Pipelines agent $AGENT_VERSION for $AGENT_ARCH ..."
-  mkdir -p /azp/agent
-  cd /azp/agent
-  curl -LsS \
-    "https://vstsagentpackage.azureedge.net/agent/${AGENT_VERSION}/vsts-agent-linux-${AGENT_ARCH}-${AGENT_VERSION}.tar.gz" \
-    | tar -xz
-  ./bin/installdependencies.sh || true
-fi
+cd /azp/agent
 
 cleanup() {
   echo "Removing agent from pool..."
@@ -34,18 +23,20 @@ cleanup() {
 }
 trap 'cleanup; exit 0' SIGINT SIGTERM
 
-cd /azp/agent
+if [ ! -f "./config.sh" ]; then
+  echo "ERROR: Agent files missing in image. Did you build the image correctly?"
+  ls -la /azp/agent || true
+  exit 1
+fi
 
-# Configure (idempotent if --replace)
 ./config.sh --unattended \
   --agent "$AZP_AGENT_NAME" \
   --url "$AZP_URL" \
   --auth pat \
   --token "$AZP_TOKEN" \
   --pool "$AZP_POOL" \
-  --work "/azp/$AZP_WORK" \
+  --work "/azp/${AZP_WORK}" \
   --replace \
   --acceptTeeEula
 
-# Run (blocks)
 ./run.sh

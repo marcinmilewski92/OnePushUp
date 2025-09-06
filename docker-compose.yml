@@ -1,21 +1,28 @@
 version: "3.8"
 services:
   azp-agent:
-    build: .
-    # For Apple Silicon you can force:
-    # platform: linux/arm64/v8
-    # For Intel Macs:
-    # platform: linux/amd64
+    build:
+      context: .
+      args:
+        AGENT_VERSION: "3.257.0"
+        # Apple Silicon:
+        AGENT_ARCH: "arm64"
+        # Intel Macs: use x64
+        # AGENT_ARCH: "x64"
+    # If Docker picks wrong platform, uncomment one of these:
+    # platform: linux/arm64/v8   # Apple Silicon
+    # platform: linux/amd64      # Intel
     environment:
-      AZP_URL: "https://dev.azure.com/<your-org>"
-      AZP_TOKEN: "<your-PAT>"
-      AZP_POOL: "MacDockerPool"   # or "Default"
+      AZP_URL: "https://dev.azure.com/software-cowboys"
+      AZP_TOKEN: "PAT"
+      AZP_POOL: "MacDockerPool"
       AZP_AGENT_NAME: "macbook-docker"
       AZP_WORK: "_work"
-      # Optional: pin a different agent version
-      # AGENT_VERSION: "3.249.1"
     volumes:
       - azpwork:/azp/_work
     restart: unless-stopped
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
 volumes:
   azpwork: {}
