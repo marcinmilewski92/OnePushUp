@@ -7,18 +7,17 @@ pool:
 
 # ---------- REQUIRED runtime parameters ----------
 parameters:
-- name: displayVersion          # e.g. 1.4.2 (REQUIRED at run)
+- name: displayVersion
   type: string
-- name: track                   # (REQUIRED at run)
+- name: track
   type: string
   values: [internal, alpha, beta, production]
-- name: notesDir                # optional (can be empty)
+- name: notesDir
   type: string
   default: ''
 
 # ---------- Variables ----------
 variables:
-# Variable Group must contain: ANDROID_KEY_ALIAS, ANDROID_STORE_PASS, ANDROID_KEY_PASS
 - group: maui-android
 
 # App-specific constants
@@ -34,7 +33,7 @@ variables:
   value: net9.0-android
 # Seed should be (last Play versionCode + 1)
 - name: VersionCode
-  value: $[counter('android-onepushup', 3)]
+  value: $[counter('android-onepushup', 2)]
 
 stages:
 - stage: Build
@@ -44,7 +43,7 @@ stages:
   - job: ValidateInputs
     displayName: Validate required parameters
     steps:
-      - script: |
+      - bash: |
           echo "Validating parameters..."
           DV='${{ parameters.displayVersion }}'
           TRACK='${{ parameters.track }}'
@@ -73,7 +72,7 @@ stages:
         inputs:
           secureFile: $(KeystoreSecureFileName)
 
-      - script: |
+      - bash: |
           set -euo pipefail
           echo "Keystore path: $(keystore.secureFilePath)"
           ls -l "$(keystore.secureFilePath)"
@@ -89,17 +88,14 @@ stages:
           ALIASES=$(keytool -list -v -keystore "$(keystore.secureFilePath)" -storepass "$ANDROID_STORE_PASS" 2>/dev/null | awk -F': ' '/^Alias name: /{print $2}')
           if [ -z "$ALIASES" ]; then
             echo "Fallback to compact format..."
-            # Example line: "myalias, Aug 25, 2025, PrivateKeyEntry,"
             ALIASES=$(keytool -list -keystore "$(keystore.secureFilePath)" -storepass "$ANDROID_STORE_PASS" 2>/dev/null | sed -n 's/^[[:space:]]*\([^,][^,]*\),.*/\1/p')
           fi
 
           echo "Found aliases: $ALIASES"
           MATCH=0
-          for A in $ALIASES; do
-            if [ "$A" = "$ANDROID_KEY_ALIAS" ]; then MATCH=1; fi
-          done
+          for A in $ALIASES; do [ "$A" = "$ANDROID_KEY_ALIAS" ] && MATCH=1; done
           if [ $MATCH -ne 1 ]; then
-            echo "##vso[task.logissue type=error]Alias '$ANDROID_KEY_ALIAS' not found in keystore. Update ANDROID_KEY_ALIAS or the keystore."
+            echo "##vso[task.logissue type=error]Alias '$ANDROID_KEY_ALIAS' not found in keystore."
             exit 1
           fi
           echo "Alias exists."
@@ -118,7 +114,7 @@ stages:
         inputs:
           secureFile: $(KeystoreSecureFileName)
 
-      - script: |
+      - bash: |
           set -euo pipefail
           echo "Checking KEY password for alias '$ANDROID_KEY_ALIAS'..."
           if ! keytool -list -keystore "$(keystore.secureFilePath)" -storepass "$ANDROID_STORE_PASS" -alias "$ANDROID_KEY_ALIAS" -keypass "$ANDROID_KEY_PASS" > /dev/null 2>&1; then
@@ -132,7 +128,7 @@ stages:
           ANDROID_KEY_PASS:  $(ANDROID_KEY_PASS)
           ANDROID_KEY_ALIAS: $(ANDROID_KEY_ALIAS)
 
-  # --- Build & sign ---
+  # --- Build, sign & publish artifact ---
   - job: BuildAndroid
     dependsOn: ValidateKeyPassword
     displayName: Build Android (signed)
@@ -146,14 +142,10 @@ stages:
           packageType: sdk
           version: 9.x
 
-      - script: dotnet workload install maui
-        displayName: 'Install .NET MAUI workload'
+      - bash: dotnet workload restore
+        displayName: 'Restore .NET workloads (project)'
 
-      - script: yes | sdkmanager --licenses
-        displayName: 'Accept Android SDK licenses'
-        continueOnError: true
-
-      - script: dotnet restore $(MauiProject)
+      - bash: dotnet restore $(MauiProject)
         displayName: 'Restore'
 
       - task: DownloadSecureFile@1
@@ -161,30 +153,65 @@ stages:
         inputs:
           secureFile: $(KeystoreSecureFileName)
 
-      - script: |
-          echo "Building $(ApplicationId)"
-          echo "versionCode=$(VersionCode) displayVersion=${{ parameters.displayVersion }}"
-          dotnet publish $(MauiProject) -c $(BuildConfiguration) -f $(TargetFramework) /p:AndroidPackageFormat=aab /p:ApplicationVersion=$(VersionCode) /p:ApplicationDisplayVersion=${{ parameters.displayVersion }} /p:AndroidKeyStore=true /p:AndroidSigningKeyStore=$(keystore.secureFilePath) /p:AndroidSigningKeyAlias="$ANDROID_KEY_ALIAS" /p:AndroidSigningStorePass="$ANDROID_STORE_PASS" /p:AndroidSigningKeyPass="$ANDROID_KEY_PASS"
-        displayName: 'Publish AAB (signed)'
-        env:
-          ANDROID_STORE_PASS: $(ANDROID_STORE_PASS)
-          ANDROID_KEY_PASS:  $(ANDROID_KEY_PASS)
-          ANDROID_KEY_ALIAS: $(ANDROID_KEY_ALIAS)
+      # Publish to a fixed staging directory
+      - bash: |
+          set -euo pipefail
+          OUT_DIR="$(Build.ArtifactStagingDirectory)/android"
+          mkdir -p "$OUT_DIR"
+          echo "Publishing to $OUT_DIR"
+          dotnet publish $(MauiProject) \
+            -c $(BuildConfiguration) -f $(TargetFramework) \
+            /p:AndroidPackageFormat=aab \
+            /p:ApplicationVersion=$(VersionCode) \
+            /p:ApplicationDisplayVersion=${{ parameters.displayVersion }} \
+            /p:PackageOutputPath="$OUT_DIR"
+          echo "Contents of $OUT_DIR:"
+          ls -l "$OUT_DIR"
+        displayName: 'Publish AAB'
 
-      - script: |
-          AAB=$(find $(System.DefaultWorkingDirectory) -name "*.aab" | head -n 1)
+      # Find the AAB only in the staging dir
+      - bash: |
+          set -euo pipefail
+          OUT_DIR="$(Build.ArtifactStagingDirectory)/android"
+          AAB=$(find "$OUT_DIR" -maxdepth 1 -type f -name "*.aab" -print -quit)
           if [ -z "$AAB" ]; then
-            echo "##vso[task.logissue type=error]No .aab produced."
+            echo "##vso[task.logissue type=error]No .aab in $OUT_DIR (did publish succeed?)."
             exit 1
           fi
           echo "##vso[task.setvariable variable=AAB_PATH;isOutput=true]$AAB"
           echo "Found AAB: $AAB"
         name: findaab
-        displayName: 'Find AAB'
+        displayName: 'Find AAB (staging dir)'
 
+      # Explicitly sign with jarsigner (deterministic)
+      - bash: |
+          set -euo pipefail
+          echo "Signing bundle with jarsigner..."
+          /usr/bin/jarsigner -verbose \
+            -sigalg SHA256withRSA -digestalg SHA-256 \
+            -keystore "$(keystore.secureFilePath)" \
+            -storepass "$ANDROID_STORE_PASS" \
+            -keypass "$ANDROID_KEY_PASS" \
+            "$(findaab.AAB_PATH)" "$ANDROID_KEY_ALIAS"
+          echo "Signed OK."
+        displayName: 'Sign AAB with jarsigner'
+        env:
+          ANDROID_STORE_PASS: $(ANDROID_STORE_PASS)
+          ANDROID_KEY_PASS:  $(ANDROID_KEY_PASS)
+          ANDROID_KEY_ALIAS: $(ANDROID_KEY_ALIAS)
+
+      # Verify signature
+      - bash: |
+          set -euo pipefail
+          echo "Verifying signature..."
+          /usr/bin/jarsigner -verify -verbose -certs "$(findaab.AAB_PATH)"
+          echo "Verification OK."
+        displayName: 'Verify AAB signature'
+
+      # Publish the whole staging dir as the artifact
       - task: PublishBuildArtifacts@1
         inputs:
-          PathtoPublish: '$(findaab.AAB_PATH)'
+          PathtoPublish: '$(Build.ArtifactStagingDirectory)/android'
           ArtifactName: 'aab'
           publishLocation: 'Container'
 
