@@ -18,6 +18,7 @@ parameters:
 
 # ---------- Variables ----------
 variables:
+# Variable Group must contain: ANDROID_KEY_ALIAS, ANDROID_STORE_PASS, ANDROID_KEY_PASS
 - group: maui-android
 
 # App-specific constants
@@ -36,6 +37,9 @@ variables:
   value: $[counter('android-onepushup', 2)]
 
 stages:
+# ===========================
+# Stage: Build
+# ===========================
 - stage: Build
   displayName: Build AAB
   jobs:
@@ -137,7 +141,7 @@ stages:
           packageType: sdk
           version: 9.x
 
-      # Explicitly install workloads needed by your project (macOS supports these)
+      # Install required workloads explicitly (reliable on macOS images)
       - bash: |
           set -e
           dotnet workload update || true
@@ -153,7 +157,7 @@ stages:
         inputs:
           secureFile: $(KeystoreSecureFileName)
 
-      # Publish to a fixed staging directory
+      # Publish to a fixed staging directory (use -o for reliability)
       - bash: |
           set -euo pipefail
           OUT_DIR="$(Build.ArtifactStagingDirectory)/android"
@@ -164,26 +168,38 @@ stages:
             /p:AndroidPackageFormat=aab \
             /p:ApplicationVersion=$(VersionCode) \
             /p:ApplicationDisplayVersion=${{ parameters.displayVersion }} \
-            /p:PackageOutputPath="$OUT_DIR"
+            -o "$OUT_DIR" \
+            /bl:$(Build.SourcesDirectory)/maui.publish.binlog
           echo "Contents of $OUT_DIR:"
-          ls -l "$OUT_DIR"
-        displayName: 'Publish AAB'
+          ls -la "$OUT_DIR"
+        displayName: 'Publish AAB (with binlog)'
 
-      # Find the AAB
+      # Find the AAB deterministically (staging dir first, then safe fallback)
       - bash: |
           set -euo pipefail
           OUT_DIR="$(Build.ArtifactStagingDirectory)/android"
-          AAB=$(find "$OUT_DIR" -maxdepth 1 -type f -name "*.aab" -print -quit)
+          echo "Looking for .aab in $OUT_DIR"
+          AAB=$(find "$OUT_DIR" -maxdepth 2 -type f -name "*.aab" -print -quit || true)
+
           if [ -z "$AAB" ]; then
-            echo "##vso[task.logissue type=error]No .aab in $OUT_DIR (did publish succeed?)."
+            echo "No .aab in $OUT_DIR. Showing OUT_DIR files:"
+            find "$OUT_DIR" -maxdepth 2 -type f -print || true
+
+            echo "Falling back to bin path search (excluding obj):"
+            AAB=$(find "$(System.DefaultWorkingDirectory)" -type f -name "*.aab" -path "*/bin/*" ! -path "*/obj/*" -print -quit || true)
+          fi
+
+          if [ -z "$AAB" ]; then
+            echo "##vso[task.logissue type=error]No .aab produced. See binlog artifact."
             exit 1
           fi
+
           echo "##vso[task.setvariable variable=AAB_PATH;isOutput=true]$AAB"
           echo "Found AAB: $AAB"
         name: findaab
-        displayName: 'Find AAB (staging dir)'
+        displayName: 'Find AAB (staging dir, then bin fallback)'
 
-      # Sign with jarsigner
+      # Sign with jarsigner (bullet-proof) and verify
       - bash: |
           set -euo pipefail
           echo "Signing bundle with jarsigner..."
@@ -200,7 +216,6 @@ stages:
           ANDROID_KEY_PASS:  $(ANDROID_KEY_PASS)
           ANDROID_KEY_ALIAS: $(ANDROID_KEY_ALIAS)
 
-      # Verify signature
       - bash: |
           set -euo pipefail
           echo "Verifying signature..."
@@ -208,19 +223,32 @@ stages:
           echo "Verification OK."
         displayName: 'Verify AAB signature'
 
-      # Publish artifact
+      # Publish artifacts (AAB + binlog for troubleshooting)
       - task: PublishBuildArtifacts@1
+        displayName: 'Publish AAB artifact'
         inputs:
           PathtoPublish: '$(Build.ArtifactStagingDirectory)/android'
           ArtifactName: 'aab'
           publishLocation: 'Container'
 
+      - task: PublishBuildArtifacts@1
+        displayName: 'Publish binlog (always)'
+        condition: always()
+        inputs:
+          PathtoPublish: '$(Build.SourcesDirectory)/maui.publish.binlog'
+          ArtifactName: 'logs'
+          publishLocation: 'Container'
+
+# ===========================
+# Stage: Release
+# ===========================
 - stage: Release
   displayName: Release to Google Play
   dependsOn: Build
   condition: succeeded()
   jobs:
   - job: PushToPlay
+    displayName: Upload to Google Play
     steps:
       - download: current
         artifact: aab
@@ -228,10 +256,10 @@ stages:
       - task: GooglePlayRelease@4
         displayName: 'Upload to Google Play (${{ parameters.track }})'
         inputs:
-          serviceConnection: 'googleplay-connection'
+          serviceConnection: 'googleplay-connection'    # your Google Play service connection name
           action: 'SingleBundle'
           applicationId: '$(ApplicationId)'
           bundleFile: '$(Pipeline.Workspace)/aab/*.aab'
-          track: '${{ parameters.track }}'
+          track: '${{ parameters.track }}'              # internal/alpha/beta/production
           userFraction: '0.1'
           whatsNewDirectory: '${{ parameters.notesDir }}'
